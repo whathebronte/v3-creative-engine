@@ -12,13 +12,37 @@ admin.initializeApp();
 // Import handlers
 const { processJob } = require('./jobProcessor');
 const { createTestJob } = require('./testJob');
+const { regenerateJob } = require('./regenerateJob');
+const { upscaleJob } = require('./upscaleJob');
+const { imageToVideoJob } = require('./imageToVideoJob');
+const { expandImageJob } = require('./expandImageJob');
+const { iterateJob } = require('./iterateJob');
+const { importPrompt } = require('./importPrompt');
 
 // Job processor (Firestore trigger)
 exports.processJob = functions.firestore
   .document('jobs/{jobId}')
   .onCreate(processJob);
 
-// Test job creation endpoint (HTTP)
-exports.createTestJob = functions.https.onRequest(createTestJob);
+// Test job creation endpoint (Callable)
+exports.createTestJob = functions.https.onCall(createTestJob);
+
+// Regenerate job endpoint (HTTP)
+exports.regenerateJob = functions.https.onCall(regenerateJob);
+
+// Upscale job endpoint (HTTP)
+exports.upscaleJob = functions.https.onCall(upscaleJob);
+
+// Image to video endpoint (HTTP)
+exports.imageToVideoJob = functions.https.onCall(imageToVideoJob);
+
+// Expand image endpoint (HTTP)
+exports.expandImageJob = functions.https.onCall(expandImageJob);
+
+// Iterate job endpoint (HTTP) - Create variations
+exports.iterateJob = functions.https.onCall(iterateJob);
+
+// MCP Bridge - Import prompt from external sources (HTTP endpoint)
+exports.importPrompt = functions.https.onRequest(importPrompt);
 
 console.log('[V3 Functions] Cloud Functions initialized');

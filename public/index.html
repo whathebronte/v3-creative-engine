@@ -3,27 +3,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>V3 Creative Engine - Factory Floor</title>
+  <title>YTM Creative Generator</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <header class="header">
-      <h1>🏭 V3 Creative Factory</h1>
-      <p class="subtitle">Built by Multi-Agent Team (Gus, Dice & Marco)</p>
-      <div class="actions">
-        <button id="testImageBtn" class="btn btn-primary">+ Test Image Job</button>
-        <button id="testVideoBtn" class="btn btn-secondary">+ Test Video Job</button>
+  <!-- Main Container -->
+  <div class="app-container">
+
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">▶</span>
+          <span class="logo-text">YTM Creative Generator</span>
+        </div>
       </div>
     </header>
 
-    <!-- Gallery -->
-    <div id="gallery" class="gallery">
-      <div class="empty-state">
-        <p>No jobs yet. Click a button above to create a test job!</p>
+    <!-- Main Layout (3 columns) -->
+    <div class="main-layout">
+
+      <!-- Left Sidebar - Control Panel -->
+      <aside class="left-sidebar">
+        <div class="control-panel">
+          <h2 class="panel-title">Control Panel</h2>
+
+          <!-- Generation Buttons -->
+          <div class="button-section">
+            <h3 class="section-label">Generation</h3>
+            <button id="generateOne" class="control-btn">
+              <span class="btn-icon">⚙️</span>
+              <span class="btn-text">Generate 1</span>
+            </button>
+            <button id="generateAll" class="control-btn">
+              <span class="btn-icon">🎨</span>
+              <span class="btn-text">Generate All</span>
+            </button>
+          </div>
+
+          <!-- Aspect Ratio Selector -->
+          <div class="button-section">
+            <h3 class="section-label">Aspect Ratio</h3>
+            <select id="aspectRatio" class="aspect-select">
+              <option value="9:16" selected>9:16 (Portrait)</option>
+              <option value="16:9">16:9 (Landscape)</option>
+              <option value="1:1">1:1 (Square)</option>
+              <option value="4:3">4:3 (Classic)</option>
+            </select>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="button-section">
+            <h3 class="section-label">Actions</h3>
+            <button id="upscaleBtn" class="control-btn" disabled>
+              <span class="btn-icon">⊕</span>
+              <span class="btn-text">Upscale res</span>
+            </button>
+            <button id="iterateBtn" class="control-btn" disabled>
+              <span class="btn-icon">🔄</span>
+              <span class="btn-text">Iterate</span>
+            </button>
+            <button id="expandBtn" class="control-btn" disabled>
+              <span class="btn-icon">↗️</span>
+              <span class="btn-text">Expand</span>
+            </button>
+            <button id="animateBtn" class="control-btn" disabled>
+              <span class="btn-icon">🎬</span>
+              <span class="btn-text">Animate (i2v)</span>
+            </button>
+          </div>
+
+          <!-- Bottom Buttons -->
+          <div class="button-section bottom-actions">
+            <button id="saveToGallery" class="control-btn" disabled>
+              <span class="btn-icon">💾</span>
+              <span class="btn-text">Save to gallery</span>
+            </button>
+            <button id="downloadBtn" class="control-btn" disabled>
+              <span class="btn-icon">⬇️</span>
+              <span class="btn-text">Download</span>
+            </button>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- Center Area - Main Lightbox -->
+      <main class="center-content">
+        <div id="mainLightbox" class="main-lightbox" data-ratio="9:16">
+          <div class="lightbox-empty">
+            <p class="empty-title">Main model lightbox</p>
+            <p class="empty-ratio" id="emptyRatioText">9:16 aspect ratio</p>
+            <p class="empty-instruction">Click a generate button to start</p>
+          </div>
+          <div id="lightboxContent" class="lightbox-content hidden">
+            <!-- Dynamic content will be inserted here -->
+          </div>
+        </div>
+      </main>
+
+      <!-- Right Sidebar - Gallery View -->
+      <aside class="right-sidebar">
+        <div class="gallery-container">
+          <div class="gallery-header">
+            <span class="gallery-title">Gallery View</span>
+          </div>
+          <div id="galleryGrid" class="gallery-grid">
+            <!-- Gallery thumbnails will be dynamically inserted here -->
+          </div>
+          <div class="gallery-footer">
+            <button class="help-btn" title="Help" onclick="showHelpModal()">?</button>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Bottom Prompt Area -->
+    <div class="prompt-container">
+      <label for="promptInput" class="prompt-label">Carried over prompt, editable</label>
+      <div class="prompt-input-wrapper">
+        <textarea
+          id="promptInput"
+          class="prompt-input"
+          placeholder="A futuristic cityscape at sunset with flying cars"
+          rows="3"
+        ></textarea>
+        <div class="resize-handle" id="resizeHandle"></div>
       </div>
     </div>
+
   </div>
 
   <!-- Firebase SDK -->

@@ -16,6 +16,34 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Gallery collection - saved assets
+    match /gallery/{galleryId} {
+      // Allow read/write for everyone (no auth for now)
+      // TODO: Add authentication later
+      allow read: if true;
+      allow create: if true;
+      allow delete: if true;
+    }
+
+    // Agent Collective - Market setups (protocols, knowledge files)
+    match /agent_markets/{marketId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Agent Collective - Chat archives
+    match /chat_archives/{archiveId} {
+      allow read: if true;
+      allow create: if true;
+      allow delete: if true;
+    }
+
+    // Agent Collective - Prompt transfers (for analytics)
+    match /prompt_transfers/{transferId} {
+      allow read: if true;
+      allow create: if true;
+    }
+
     // Default: deny all other access
     match /{document=**} {
       allow read, write: if false;

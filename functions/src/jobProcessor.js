@@ -21,22 +21,41 @@ async function processJob(snap, context) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
+    // Get configuration from environment
     const apiKey = process.env.GEMINI_API_KEY;
-    const gemini = new GeminiClient(apiKey);
+    const projectId = process.env.GCP_PROJECT_ID || 'v3-creative-engine';
+    const location = process.env.VERTEX_AI_LOCATION || 'us-central1';
+
+    const gemini = new GeminiClient(apiKey, projectId, location);
 
     const startTime = Date.now();
     let result;
 
     if (job.type === 'image') {
       result = await gemini.generateImage(job.prompt, job.format || '1:1');
+
+      // Phase 2: Upload actual image data to Cloud Storage if available
+      if (result.data) {
+        console.log(`[JobProcessor] Uploading image to Cloud Storage for job ${jobId}`);
+        const storageUrl = await uploadImageToStorage(jobId, result.data);
+        result.url = storageUrl;
+        delete result.data; // Remove base64 data from result
+      }
+
     } else {
       result = await gemini.generateVideo(job.prompt, job.format || '16:9');
+
+      // Phase 2: Upload actual video data to Cloud Storage if available
+      if (result.data) {
+        console.log(`[JobProcessor] Uploading video to Cloud Storage for job ${jobId}`);
+        const storageUrl = await uploadVideoToStorage(jobId, result.data);
+        result.url = storageUrl;
+        delete result.data; // Remove base64 data from result
+      }
     }
 
     const processingTimeMs = Date.now() - startTime;
 
-    // Phase 1: Use the placeholder URL directly from Gemini
-    // Phase 2: Download the actual image/video and upload to our storage
     await jobRef.update({
       status: 'complete',
       result: { url: result.url, metadata: result.metadata },
@@ -45,7 +64,7 @@ async function processJob(snap, context) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log(`[JobProcessor] Job ${jobId} completed`);
+    console.log(`[JobProcessor] Job ${jobId} completed in ${processingTimeMs}ms`);
 
   } catch (error) {
     console.error(`[JobProcessor] Job ${jobId} failed:`, error);
@@ -58,21 +77,76 @@ async function processJob(snap, context) {
   }
 }
 
-async function uploadToStorage(jobId, type, result) {
+/**
+ * Upload image to Cloud Storage
+ * @param {string} jobId - Job ID
+ * @param {string} base64Data - Base64 encoded image data
+ * @returns {string} Public URL of uploaded image
+ */
+async function uploadImageToStorage(jobId, base64Data) {
   const bucket = admin.storage().bucket();
-  const folder = type === 'image' ? 'images' : 'videos';
-  const ext = type === 'image' ? 'png' : 'mp4';
-  const fileName = `${folder}/${jobId}.${ext}`;
-
+  const fileName = `images/${jobId}.png`;
   const file = bucket.file(fileName);
-  const placeholder = JSON.stringify({ jobId, type, metadata: result.metadata });
 
-  await file.save(placeholder, {
-    metadata: { contentType: result.metadata.mimeType },
-    public: true
+  // Convert base64 to buffer
+  const buffer = Buffer.from(base64Data, 'base64');
+
+  console.log(`[JobProcessor] Uploading image: ${fileName} (${buffer.length} bytes)`);
+
+  await file.save(buffer, {
+    metadata: {
+      contentType: 'image/png',
+      metadata: {
+        jobId: jobId,
+        generatedAt: new Date().toISOString()
+      }
+    },
+    public: true,
+    resumable: false // Faster for small files
   });
 
-  return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+  // Get public URL
+  const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+  console.log(`[JobProcessor] Image uploaded: ${publicUrl}`);
+
+  return publicUrl;
+}
+
+/**
+ * Upload video to Cloud Storage
+ * @param {string} jobId - Job ID
+ * @param {string} base64Data - Base64 encoded video data
+ * @returns {string} Public URL of uploaded video
+ */
+async function uploadVideoToStorage(jobId, base64Data) {
+  const bucket = admin.storage().bucket();
+  const fileName = `videos/${jobId}.mp4`;
+  const file = bucket.file(fileName);
+
+  // Convert base64 to buffer
+  const buffer = Buffer.from(base64Data, 'base64');
+
+  console.log(`[JobProcessor] Uploading video: ${fileName} (${buffer.length} bytes)`);
+
+  await file.save(buffer, {
+    metadata: {
+      contentType: 'video/mp4',
+      metadata: {
+        jobId: jobId,
+        generatedAt: new Date().toISOString()
+      }
+    },
+    public: true,
+    resumable: false
+  });
+
+  // Get public URL
+  const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+  console.log(`[JobProcessor] Video uploaded: ${publicUrl}`);
+
+  return publicUrl;
 }
 
 module.exports = { processJob };

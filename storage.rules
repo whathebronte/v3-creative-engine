@@ -8,7 +8,13 @@ service firebase.storage {
       allow read: if true;
     }
 
-    // Only allow writes from Cloud Functions (via admin SDK)
+    // Allow uploads to knowledge base folder (Agent Collective)
+    match /knowledge/{market}/{fileName} {
+      allow write: if request.resource.size < 50 * 1024 * 1024  // Max 50MB
+                   && request.resource.contentType.matches('application/pdf|application/vnd.openxmlformats-officedocument.*');
+    }
+
+    // Only allow writes from Cloud Functions (via admin SDK) for other paths
     match /{allPaths=**} {
       allow write: if false;
     }

@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YTM Agent Collective</title>
+  <style>
+    /* ============================================================================
+       RESET & BASE STYLES - Matching Creative Generator
+       ============================================================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #000000;
+      color: #e0e0e0;
+      line-height: 1.6;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #000000;
+    }
+
+    .app-header {
+      background: #1a1a1a;
+      padding: 12px 24px;
+      border-bottom: 1px solid #3a3a3a;
+      flex-shrink: 0;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      color: #FF0000;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .open-generator-btn {
+      background: #FF0000;
+      color: white;
+      border: 2px solid #FF0000;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+    }
+
+    .open-generator-btn:hover {
+      background: #CC0000;
+      border-color: #CC0000;
+      box-shadow: 0 6px 20px rgba(255, 0, 0, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .left-sidebar {
+      background: #1a1a1a;
+      border-right: 1px solid #3a3a3a;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #888888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .button-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .country-select, .archive-select {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 12px;
+      padding: 12px;
+      color: #ffffff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .country-select:hover, .archive-select:hover {
+      border-color: #FF0000;
+    }
+
+    .country-select:focus, .archive-select:focus {
+      outline: none;
+      border-color: #FF0000;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+    }
+
+    .agent-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #2a2a2a;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid #3a3a3a;
+      transition: all 0.3s ease;
+    }
+
+    .agent-toggle:hover {
+      border-color: #FF0000;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+    }
+
+    .agent-toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #3a3a3a;
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: #FF0000;
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+    }
+
+    .control-btn {
+      background: #2a2a2a;
+      color: #ffffff;
+      border: 1px solid #3a3a3a;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      text-align: left;
+    }
+
+    .control-btn:hover:not(:disabled) {
+      background: #333333;
+      border-color: #FF0000;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+    }
+
+    .control-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-icon {
+      font-size: 16px;
+    }
+
+    .btn-text {
+      flex: 1;
+    }
+
+    .send-generator-btn {
+      background: linear-gradient(135deg, #FF0000, #CC0000);
+      border: none;
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+    }
+
+    .send-generator-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 0, 0, 0.5);
+    }
+
+    .center-content {
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #1a1a1a;
+      border-radius: 12px;
+      border: 1px solid #3a3a3a;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background: #2a2a2a;
+      padding: 16px 20px;
+      border-bottom: 1px solid #3a3a3a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .chat-header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .chat-status {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .online-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #00ff00;
+    }
+
+    .online-dot {
+      width: 8px;
+      height: 8px;
+      background: #00ff00;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+      animation: pulse 2s infinite;
+    }
+
+    .online-indicator.offline .online-dot {
+      background: #ff0000;
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+    }
+
+    .online-indicator.offline {
+      color: #ff0000;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .message-user {
+      background: #FF0000;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message-agent {
+      background: #2a2a2a;
+      color: #e0e0e0;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message-marketing {
+      border-left: 3px solid #00BFFF;
+    }
+
+    .message-creative {
+      border-left: 3px solid #FF6600;
+    }
+
+    .message-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .message-time {
+      font-size: 10px;
+      color: #666;
+      margin-top: 8px;
+      text-align: right;
+    }
+
+    .chat-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 14px;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+      background: #2a2a2a;
+      border-radius: 12px;
+      align-self: flex-start;
+      width: fit-content;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background: #888;
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    .chat-input-area {
+      padding: 16px;
+      border-top: 1px solid #3a3a3a;
+      background: #1a1a1a;
+    }
+
+    .chat-input-label {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .chat-input-wrapper {
+      position: relative;
+      display: flex;
+      gap: 12px;
+    }
+
+    .chat-input-container {
+      flex: 1;
+      position: relative;
+    }
+
+    .chat-input {
+      width: 100%;
+      background: #0f0f0f;
+      border: 1px solid #3a3a3a;
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: #ffffff;
+      font-size: 14px;
+      resize: none;
+      font-family: inherit;
+      min-height: 60px;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: #FF0000;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
+    }
+
+    .resize-handle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 20px;
+      height: 20px;
+      cursor: ns-resize;
+      background: #FF0000;
+      clip-path: polygon(100% 0, 0 0, 100% 100%);
+      border-radius: 0 12px 0 0;
+      opacity: 0.8;
+      transition: opacity 0.3s ease;
+    }
+
+    .resize-handle:hover {
+      opacity: 1;
+    }
+
+    .chat-send-btn {
+      background: #FF0000;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      align-self: flex-end;
+    }
+
+    .chat-send-btn:hover:not(:disabled) {
+      background: #CC0000;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+    }
+
+    .chat-send-btn:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .right-sidebar {
+      background: #1a1a1a;
+      border-left: 1px solid #3a3a3a;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .setup-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .setup-header {
+      background: #2a2a2a;
+      padding: 16px 20px;
+      border-bottom: 1px solid #3a3a3a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .setup-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .setup-save-indicator {
+      font-size: 11px;
+      color: #00ff00;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .setup-content {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .setup-section {
+      margin-bottom: 24px;
+    }
+
+    .setup-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #888888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-upload-area {
+      background: #0f0f0f;
+      border: 2px dashed #3a3a3a;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .file-upload-area:hover {
+      border-color: #FF0000;
+      background: #1a1a1a;
+    }
+
+    .file-upload-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .file-upload-text {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .file-upload-formats {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .file-list {
+      margin-top: 12px;
+    }
+
+    .file-item {
+      background: #2a2a2a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .file-remove {
+      background: none;
+      border: none;
+      color: #FF0000;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .mcp-badge {
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid #FF0000;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 11px;
+      color: #FF0000;
+      text-align: center;
+    }
+
+    .mcp-badge-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .mcp-badge-status {
+      color: #888;
+      font-size: 10px;
+    }
+
+    .protocol-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .protocol-modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    .protocol-modal-content {
+      position: relative;
+      background: #1a1a1a;
+      border: 2px solid #FF0000;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 700px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(255, 0, 0, 0.3);
+    }
+
+    .protocol-modal-header {
+      background: #2a2a2a;
+      padding: 16px 20px;
+      border-bottom: 1px solid #3a3a3a;
+      border-radius: 10px 10px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .protocol-modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .protocol-close-btn {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .protocol-close-btn:hover {
+      color: #FF0000;
+    }
+
+    .protocol-modal-body {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .protocol-textarea {
+      width: 100%;
+      min-height: 300px;
+      background: #0f0f0f;
+      border: 1px solid #3a3a3a;
+      border-radius: 8px;
+      padding: 16px;
+      color: #e0e0e0;
+      font-size: 13px;
+      line-height: 1.6;
+      font-family: 'Courier New', monospace;
+      resize: vertical;
+    }
+
+    .protocol-textarea:focus {
+      outline: none;
+      border-color: #FF0000;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
+    }
+
+    .protocol-modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #3a3a3a;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .protocol-save-btn {
+      background: #FF0000;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .protocol-save-btn:hover {
+      background: #CC0000;
+    }
+
+    .protocol-cancel-btn {
+      background: #3a3a3a;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .protocol-cancel-btn:hover {
+      background: #4a4a4a;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #3a3a3a;
+      border-radius: 4px;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #1a1a1a;
+      border: 2px solid #FF0000;
+      border-radius: 12px;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10000;
+      box-shadow: 0 4px 20px rgba(255, 0, 0, 0.3);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      width: 32px;
+      height: 32px;
+      background: #FF0000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .toast-message {
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    @media (max-width: 1024px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+      .left-sidebar, .right-sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">▶</span>
+          <span class="logo-text">YTM Agent Collective</span>
+        </div>
+        <div class="header-actions">
+          <a href="index.html" class="open-generator-btn">
+            <span>▶</span>
+            <span>Open YTM Creative Generator</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <aside class="left-sidebar">
+        <div class="control-panel">
+          <h2 class="panel-title">Control Panel</h2>
+
+          <div class="button-section">
+            <h3 class="section-label">Market</h3>
+            <select id="countrySelect" class="country-select">
+              <option value="japan">Japan</option>
+              <option value="korea">Korea</option>
+              <option value="india">India</option>
+              <option value="indonesia">Indonesia</option>
+            </select>
+          </div>
+
+          <div class="button-section">
+            <h3 class="section-label">Active Agents</h3>
+            <div class="agent-toggle">
+              <div class="agent-toggle-label">
+                <span>📊</span>
+                <span>Marketing Manager</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggleMarketing" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="agent-toggle">
+              <div class="agent-toggle-label">
+                <span>✨</span>
+                <span>Creative Prompter</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggleCreative" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="button-section">
+            <h3 class="section-label">Actions</h3>
+            <button id="clearChatBtn" class="control-btn">
+              <span class="btn-icon">🗑️</span>
+              <span class="btn-text">Clear Chat</span>
+            </button>
+            <button id="saveChatBtn" class="control-btn">
+              <span class="btn-icon">📥</span>
+              <span class="btn-text">Save to Archive</span>
+            </button>
+          </div>
+
+          <div class="button-section" style="margin-top: auto;">
+            <h3 class="section-label">MCP Bridge</h3>
+            <button id="sendToGeneratorBtn" class="control-btn send-generator-btn" disabled>
+              <span class="btn-icon">🚀</span>
+              <span class="btn-text">Send to Generator</span>
+            </button>
+          </div>
+
+          <div class="button-section">
+            <h3 class="section-label">Chat Archive</h3>
+            <select id="archiveSelect" class="archive-select">
+              <option value="">-- Load saved chat --</option>
+            </select>
+          </div>
+        </div>
+      </aside>
+
+      <main class="center-content">
+        <div class="chat-container">
+          <div class="chat-header">
+            <span class="chat-title">Agent Chat</span>
+            <div class="chat-header-right">
+              <span id="chatStatus" class="chat-status">Ready</span>
+              <div id="onlineIndicator" class="online-indicator">
+                <div class="online-dot"></div>
+                <span>Online</span>
+              </div>
+            </div>
+          </div>
+          <div id="chatMessages" class="chat-messages">
+            <div class="chat-empty">
+              <div>
+                <p style="font-size: 24px; margin-bottom: 12px;">💬</p>
+                <p>Start a conversation with your agents</p>
+                <p style="color: #555; font-size: 12px; margin-top: 8px;">
+                  Toggle agents on the left, then type your marketing brief request below
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="chat-input-label">Message input, expandable</div>
+            <div class="chat-input-wrapper">
+              <div class="chat-input-container">
+                <textarea id="chatInput" class="chat-input" placeholder="Describe your marketing campaign needs..." rows="3"></textarea>
+                <div class="resize-handle" id="resizeHandle"></div>
+              </div>
+              <button id="chatSendBtn" class="chat-send-btn">Send</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="right-sidebar">
+        <div class="setup-container">
+          <div class="setup-header">
+            <span class="setup-title">Agent Setup</span>
+            <span id="saveIndicator" class="setup-save-indicator" style="display: none;">
+              <span>✓</span> Saved
+            </span>
+          </div>
+          <div class="setup-content">
+            <div class="setup-section">
+              <h3 class="setup-section-title">
+                <span>📋</span> Agent Protocols
+              </h3>
+              <button id="marketingProtocolBtn" class="control-btn" style="margin-bottom: 10px;">
+                <span class="btn-icon">📊</span>
+                <span class="btn-text">Marketing Manager</span>
+              </button>
+              <button id="creativeProtocolBtn" class="control-btn">
+                <span class="btn-icon">✨</span>
+                <span class="btn-text">Creative Prompter</span>
+              </button>
+            </div>
+
+            <div class="setup-section">
+              <h3 class="setup-section-title">
+                <span>📚</span> Marketing Manager Knowledge Base
+              </h3>
+              <div id="fileUploadArea" class="file-upload-area">
+                <div class="file-upload-icon">📁</div>
+                <div class="file-upload-text">Drop files here or click to upload</div>
+                <div class="file-upload-formats">Supports: PDF, DOCX, PPTX, XLSX</div>
+              </div>
+              <input type="file" id="fileInput" style="display: none;" multiple accept=".pdf,.docx,.pptx,.xlsx">
+              <div id="fileList" class="file-list"></div>
+            </div>
+
+            <div class="setup-section">
+              <h3 class="setup-section-title">
+                <span>🌐</span> Marketing Manager Trending Intelligence
+              </h3>
+              <div class="mcp-badge">
+                <div class="mcp-badge-title">MCP Server Integration</div>
+                <div class="mcp-badge-status">Coming Soon - Weekly trending topics</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Firebase SDK - Same as Creative Generator -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+  <script>
+    // ============================================================================
+    // FIREBASE CONFIGURATION - Same as YTM Creative Generator
+    // ============================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwtQBAZ_IewB2TYCkew3ctzB4HMs9Gyn0",
+      authDomain: "v3-creative-engine.firebaseapp.com",
+      projectId: "v3-creative-engine",
+      storageBucket: "v3-creative-engine.firebasestorage.app",
+      messagingSenderId: "964100659393",
+      appId: "1:964100659393:web:bc6aa41fce9a8770d55c40"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // ============================================================================
+    // GEMINI API CONFIGURATION
+    // ============================================================================
+    const GEMINI_API_KEY = 'AIzaSyDRXeO7Xyxj8fSJHcJTNy8sC1UZbuhlApg';
+    const GEMINI_MODEL = 'gemini-2.0-flash';
+
+    // ============================================================================
+    // STATE MANAGEMENT
+    // ============================================================================
+    let state = {
+      currentMarket: 'japan',
+      marketingEnabled: true,
+      creativeEnabled: true,
+      lastFinalizedPrompt: null,
+      knowledgeFiles: [],
+      currentChatMessages: [],
+      isProcessing: false,
+      protocols: {
+        marketing: '',
+        creative: ''
+      }
+    };
+
+    // Default protocols
+    const DEFAULT_PROTOCOLS = {
+      marketing: `You are the Marketing Manager for YouTube Music campaigns. Your ONLY job is to create a complete marketing brief based on the user's input.
+
+IMPORTANT: Do NOT ask follow-up questions. Do NOT request more information. Take whatever input you receive and immediately produce a complete marketing brief.
+
+When you receive ANY input, you MUST respond with a structured marketing brief containing:
+
+**MARKETING BRIEF**
+
+**Campaign Objective:** [State the main goal based on user input]
+
+**Target Audience:**
+- Age range
+- Interests and behaviors
+- Platform preferences
+
+**Key Message:** [One compelling tagline or message]
+
+**Visual Direction:**
+- Color palette
+- Mood/atmosphere
+- Setting/environment
+- Style references
+
+**Tone & Style:** [Describe the creative approach]
+
+**Recommended Hashtags:** [3-5 relevant hashtags]
+
+**Optimal Posting:** [Best times and days]
+
+Always produce a COMPLETE brief immediately. Never ask for clarification. Make reasonable assumptions based on YouTube Music's brand (youthful, energetic, diverse, music-focused).`,
+      creative: `You are the Creative Prompter for AI image generation. Your ONLY job is to transform the marketing brief into an optimized image generation prompt.
+
+IMPORTANT: Do NOT ask questions. Take the brief and immediately create a detailed image prompt.
+
+When you receive a marketing brief, you MUST:
+1. Analyze the visual direction and key message
+2. Create ONE detailed, specific image generation prompt
+3. Include: subject, setting, lighting, colors, composition, camera angle, style, mood
+4. Consider aspect ratio (default to 9:16 for vertical social media)
+5. Use positive prompting only (describe what TO include)
+
+Always end your response with exactly this format:
+
+**FINAL PROMPT:** [Your complete, detailed prompt for image generation - make it specific, vivid, and ready for Imagen 3 or similar AI generators]
+
+The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and specific.`
+    };
+
+    // DOM Elements
+    const countrySelect = document.getElementById('countrySelect');
+    const toggleMarketing = document.getElementById('toggleMarketing');
+    const toggleCreative = document.getElementById('toggleCreative');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+    const chatStatus = document.getElementById('chatStatus');
+    const sendToGeneratorBtn = document.getElementById('sendToGeneratorBtn');
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    const saveChatBtn = document.getElementById('saveChatBtn');
+    const marketingProtocolBtn = document.getElementById('marketingProtocolBtn');
+    const creativeProtocolBtn = document.getElementById('creativeProtocolBtn');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const saveIndicator = document.getElementById('saveIndicator');
+    const onlineIndicator = document.getElementById('onlineIndicator');
+    const archiveSelect = document.getElementById('archiveSelect');
+    const resizeHandle = document.getElementById('resizeHandle');
+
+    // ============================================================================
+    // INITIALIZATION
+    // ============================================================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('[YTM Agent Collective] Initializing...');
+      setupEventListeners();
+      setupResizeHandle();
+      await loadMarketData();
+      updateOnlineStatus();
+      console.log('[YTM Agent Collective] Ready');
+    });
+
+    function setupEventListeners() {
+      countrySelect.addEventListener('change', handleMarketChange);
+      toggleMarketing.addEventListener('change', () => {
+        state.marketingEnabled = toggleMarketing.checked;
+        updateOnlineStatus();
+      });
+      toggleCreative.addEventListener('change', () => {
+        state.creativeEnabled = toggleCreative.checked;
+        updateOnlineStatus();
+      });
+      chatSendBtn.addEventListener('click', sendMessage);
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+      clearChatBtn.addEventListener('click', clearChat);
+      saveChatBtn.addEventListener('click', saveChatToArchive);
+      sendToGeneratorBtn.addEventListener('click', sendToGenerator);
+      marketingProtocolBtn.addEventListener('click', () => openProtocolModal('marketing'));
+      creativeProtocolBtn.addEventListener('click', () => openProtocolModal('creative'));
+      fileUploadArea.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', handleFileUpload);
+      archiveSelect.addEventListener('change', loadArchivedChat);
+    }
+
+    function setupResizeHandle() {
+      let isResizing = false;
+      let startY = 0;
+      let startHeight = 0;
+
+      resizeHandle.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startY = e.clientY;
+        startHeight = chatInput.offsetHeight;
+        document.body.style.cursor = 'ns-resize';
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        const deltaY = startY - e.clientY;
+        const newHeight = Math.max(60, Math.min(300, startHeight + deltaY));
+        chatInput.style.height = newHeight + 'px';
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isResizing) {
+          isResizing = false;
+          document.body.style.cursor = '';
+        }
+      });
+    }
+
+    // ============================================================================
+    // FIRESTORE DATA PERSISTENCE
+    // ============================================================================
+    async function loadMarketData() {
+      try {
+        const doc = await db.collection('agent_markets').doc(state.currentMarket).get();
+        if (doc.exists) {
+          const data = doc.data();
+          state.protocols.marketing = data.marketingProtocol || DEFAULT_PROTOCOLS.marketing;
+          state.protocols.creative = data.creativeProtocol || DEFAULT_PROTOCOLS.creative;
+          state.knowledgeFiles = data.knowledgeFiles || [];
+          renderFileList();
+        } else {
+          state.protocols = { ...DEFAULT_PROTOCOLS };
+        }
+        await loadChatArchiveList();
+        console.log(`[YTM] Loaded data for ${state.currentMarket}`);
+      } catch (error) {
+        console.error('Error loading market data:', error);
+        state.protocols = { ...DEFAULT_PROTOCOLS };
+      }
+    }
+
+    async function saveMarketData() {
+      try {
+        await db.collection('agent_markets').doc(state.currentMarket).set({
+          marketingProtocol: state.protocols.marketing,
+          creativeProtocol: state.protocols.creative,
+          knowledgeFiles: state.knowledgeFiles,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        showSaveIndicator();
+      } catch (error) {
+        console.error('Error saving market data:', error);
+      }
+    }
+
+    async function handleMarketChange() {
+      state.currentMarket = countrySelect.value;
+      await loadMarketData();
+      clearChat();
+      showToast(`Switched to ${state.currentMarket.toUpperCase()} market`);
+    }
+
+    // ============================================================================
+    // CHAT ARCHIVE PERSISTENCE
+    // ============================================================================
+    async function saveChatToArchive() {
+      if (state.currentChatMessages.length === 0) {
+        showToast('No chat messages to save');
+        return;
+      }
+
+      try {
+        const archiveData = {
+          market: state.currentMarket,
+          messages: state.currentChatMessages,
+          savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          name: `${state.currentMarket.toUpperCase()} - ${new Date().toLocaleString()}`
+        };
+
+        await db.collection('chat_archives').add(archiveData);
+        await loadChatArchiveList();
+        showToast('Chat saved to archive');
+      } catch (error) {
+        console.error('Error saving chat:', error);
+        showToast('Failed to save chat');
+      }
+    }
+
+    async function loadChatArchiveList() {
+      try {
+        const snapshot = await db.collection('chat_archives')
+          .where('market', '==', state.currentMarket)
+          .orderBy('savedAt', 'desc')
+          .limit(20)
+          .get();
+
+        archiveSelect.innerHTML = '<option value="">-- Load saved chat --</option>';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const option = document.createElement('option');
+          option.value = doc.id;
+          option.textContent = data.name;
+          archiveSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading archives:', error);
+      }
+    }
+
+    async function loadArchivedChat() {
+      const archiveId = archiveSelect.value;
+      if (!archiveId) return;
+
+      try {
+        const doc = await db.collection('chat_archives').doc(archiveId).get();
+        if (doc.exists) {
+          const data = doc.data();
+          const emptyState = chatMessages.querySelector('.chat-empty');
+          if (emptyState) emptyState.remove();
+
+          chatMessages.innerHTML = '';
+          state.currentChatMessages = data.messages || [];
+
+          data.messages.forEach(msg => {
+            addChatMessageDirect(msg.text, msg.type, msg.agentType, msg.agentName);
+          });
+
+          showToast('Chat loaded from archive');
+        }
+      } catch (error) {
+        console.error('Error loading archived chat:', error);
+      }
+
+      archiveSelect.value = '';
+    }
+
+    // ============================================================================
+    // GEMINI API INTEGRATION
+    // ============================================================================
+    async function callGemini(systemPrompt, userMessage) {
+      if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+        throw new Error('Please configure your Gemini API key');
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+      const requestBody = {
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [{
+          role: 'user',
+          parts: [{ text: userMessage }]
+        }],
+        generationConfig: {
+          temperature: 0.9,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048
+        }
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.candidates[0].content.parts[0].text;
+    }
+
+    // ============================================================================
+    // CHAT FUNCTIONALITY
+    // ============================================================================
+    async function sendMessage() {
+      const message = chatInput.value.trim();
+      if (!message || state.isProcessing) return;
+
+      if (!state.marketingEnabled && !state.creativeEnabled) {
+        showToast('Enable at least one agent to chat');
+        return;
+      }
+
+      const emptyState = chatMessages.querySelector('.chat-empty');
+      if (emptyState) emptyState.remove();
+
+      addChatMessage(message, 'user');
+      chatInput.value = '';
+
+      state.isProcessing = true;
+      chatSendBtn.disabled = true;
+      chatStatus.textContent = 'Processing...';
+
+      try {
+        if (state.marketingEnabled) {
+          showTypingIndicator('Marketing Manager');
+          const marketingResponse = await callGemini(state.protocols.marketing, message);
+          removeTypingIndicator();
+          addChatMessage(marketingResponse, 'agent', 'marketing', 'Marketing Manager');
+
+          if (state.creativeEnabled) {
+            showTypingIndicator('Creative Prompter');
+            const creativeResponse = await callGemini(
+              state.protocols.creative,
+              `Based on this marketing brief, create an optimized image generation prompt:\n\n${marketingResponse}`
+            );
+            removeTypingIndicator();
+            addChatMessage(creativeResponse, 'agent', 'creative', 'Creative Prompter');
+            extractFinalPrompt(creativeResponse);
+          }
+        } else if (state.creativeEnabled) {
+          showTypingIndicator('Creative Prompter');
+          const creativeResponse = await callGemini(state.protocols.creative, message);
+          removeTypingIndicator();
+          addChatMessage(creativeResponse, 'agent', 'creative', 'Creative Prompter');
+          extractFinalPrompt(creativeResponse);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        removeTypingIndicator();
+        addChatMessage(`Error: ${error.message}`, 'agent', 'marketing', 'System');
+      } finally {
+        state.isProcessing = false;
+        chatSendBtn.disabled = false;
+        chatStatus.textContent = 'Ready';
+      }
+    }
+
+    function addChatMessage(text, type, agentType = '', agentName = '') {
+      state.currentChatMessages.push({ text, type, agentType, agentName });
+      addChatMessageDirect(text, type, agentType, agentName);
+    }
+
+    function addChatMessageDirect(text, type, agentType = '', agentName = '') {
+      const messageDiv = document.createElement('div');
+      if (type === 'user') {
+        messageDiv.className = 'message message-user';
+        messageDiv.innerHTML = `${text}<div class="message-time">${new Date().toLocaleTimeString()}</div>`;
+      } else {
+        messageDiv.className = `message message-agent message-${agentType}`;
+        messageDiv.innerHTML = `<div class="message-header">${agentName}</div>${formatMarkdown(text)}<div class="message-time">${new Date().toLocaleTimeString()}</div>`;
+      }
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTypingIndicator(agentName) {
+      const indicator = document.createElement('div');
+      indicator.id = 'typingIndicator';
+      indicator.className = 'typing-indicator';
+      indicator.innerHTML = `<span style="font-size: 11px; color: #888; margin-right: 8px;">${agentName} is typing</span><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
+      chatMessages.appendChild(indicator);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
+    }
+
+    function clearChat() {
+      chatMessages.innerHTML = `<div class="chat-empty"><div><p style="font-size: 24px; margin-bottom: 12px;">💬</p><p>Start a conversation with your agents</p><p style="color: #555; font-size: 12px; margin-top: 8px;">Toggle agents on the left, then type your marketing brief request below</p></div></div>`;
+      state.currentChatMessages = [];
+      state.lastFinalizedPrompt = null;
+      sendToGeneratorBtn.disabled = true;
+      showToast('Chat cleared');
+    }
+
+    function formatMarkdown(text) {
+      return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n/g, '<br>');
+    }
+
+    // ============================================================================
+    // PROTOCOL MODAL
+    // ============================================================================
+    function openProtocolModal(agentType) {
+      const isMarketing = agentType === 'marketing';
+      const title = isMarketing ? 'Marketing Manager Protocol' : 'Creative Prompter Protocol';
+      const icon = isMarketing ? '📊' : '✨';
+      const currentProtocol = state.protocols[agentType];
+
+      const modal = document.createElement('div');
+      modal.className = 'protocol-modal';
+      modal.id = 'protocolModal';
+      modal.innerHTML = `
+        <div class="protocol-modal-overlay" onclick="closeProtocolModal()"></div>
+        <div class="protocol-modal-content">
+          <div class="protocol-modal-header">
+            <div class="protocol-modal-title"><span>${icon}</span><span>${title}</span></div>
+            <button class="protocol-close-btn" onclick="closeProtocolModal()">×</button>
+          </div>
+          <div class="protocol-modal-body">
+            <textarea id="protocolTextarea" class="protocol-textarea">${currentProtocol}</textarea>
+          </div>
+          <div class="protocol-modal-footer">
+            <button class="protocol-cancel-btn" onclick="closeProtocolModal()">Cancel</button>
+            <button class="protocol-save-btn" onclick="saveProtocol('${agentType}')">Save Protocol</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    window.closeProtocolModal = function() {
+      const modal = document.getElementById('protocolModal');
+      if (modal) modal.remove();
+    };
+
+    window.saveProtocol = async function(agentType) {
+      const textarea = document.getElementById('protocolTextarea');
+      if (textarea) {
+        state.protocols[agentType] = textarea.value;
+        await saveMarketData();
+        showToast(`${agentType === 'marketing' ? 'Marketing Manager' : 'Creative Prompter'} protocol saved`);
+        closeProtocolModal();
+      }
+    };
+
+    // ============================================================================
+    // FILE UPLOAD
+    // ============================================================================
+    async function handleFileUpload(event) {
+      const files = event.target.files;
+      for (const file of files) {
+        try {
+          const storageRef = storage.ref(`knowledge/${state.currentMarket}/${Date.now()}_${file.name}`);
+          await storageRef.put(file);
+          const downloadURL = await storageRef.getDownloadURL();
+
+          state.knowledgeFiles.push({
+            name: file.name,
+            url: downloadURL,
+            uploadedAt: new Date().toISOString()
+          });
+
+          showToast(`Uploaded: ${file.name}`);
+        } catch (error) {
+          console.error('Upload error:', error);
+          showToast(`Failed to upload: ${file.name}`);
+        }
+      }
+      renderFileList();
+      await saveMarketData();
+    }
+
+    function renderFileList() {
+      fileList.innerHTML = state.knowledgeFiles.map((file, index) => `
+        <div class="file-item">
+          <span>📄 ${file.name}</span>
+          <button class="file-remove" onclick="removeFile(${index})">×</button>
+        </div>
+      `).join('');
+    }
+
+    window.removeFile = async function(index) {
+      state.knowledgeFiles.splice(index, 1);
+      renderFileList();
+      await saveMarketData();
+    };
+
+    // ============================================================================
+    // MCP BRIDGE
+    // ============================================================================
+    function extractFinalPrompt(response) {
+      const match = response.match(/FINAL PROMPT:\s*(.+?)(?:\n\n|$)/is);
+      if (match) {
+        state.lastFinalizedPrompt = match[1].trim();
+        sendToGeneratorBtn.disabled = false;
+      }
+    }
+
+    async function sendToGenerator() {
+      if (!state.lastFinalizedPrompt) return;
+
+      const originalText = sendToGeneratorBtn.querySelector('.btn-text').textContent;
+      sendToGeneratorBtn.disabled = true;
+      sendToGeneratorBtn.querySelector('.btn-text').textContent = 'Sending...';
+
+      const encodedPrompt = encodeURIComponent(state.lastFinalizedPrompt);
+      window.open(`index.html?prompt=${encodedPrompt}`, '_blank');
+
+      await db.collection('prompt_transfers').add({
+        prompt: state.lastFinalizedPrompt,
+        market: state.currentMarket,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      sendToGeneratorBtn.querySelector('.btn-text').textContent = 'Sent!';
+      showToast('Prompt sent to Creative Generator');
+
+      setTimeout(() => {
+        sendToGeneratorBtn.querySelector('.btn-text').textContent = originalText;
+        sendToGeneratorBtn.disabled = false;
+      }, 3000);
+    }
+
+    // ============================================================================
+    // UTILITY FUNCTIONS
+    // ============================================================================
+    function updateOnlineStatus() {
+      const hasActiveAgent = state.marketingEnabled || state.creativeEnabled;
+      if (hasActiveAgent) {
+        onlineIndicator.classList.remove('offline');
+        onlineIndicator.innerHTML = `<div class="online-dot"></div><span>Online</span>`;
+      } else {
+        onlineIndicator.classList.add('offline');
+        onlineIndicator.innerHTML = `<div class="online-dot"></div><span>Offline</span>`;
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<div class="toast-icon">✓</div><div class="toast-message">${message}</div>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function showSaveIndicator() {
+      saveIndicator.style.display = 'flex';
+      setTimeout(() => saveIndicator.style.display = 'none', 3000);
+    }
+
+    console.log('[YTM Agent Collective] Production script loaded');
+  </script>
+</body>
+</html>
