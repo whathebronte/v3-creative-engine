@@ -1042,10 +1042,10 @@
     const storage = firebase.storage();
 
     // ============================================================================
-    // GEMINI API CONFIGURATION
+    // GEMINI API CONFIGURATION (Secure - Server-side)
     // ============================================================================
-    const GEMINI_API_KEY = 'AIzaSyCtDQrtp7n_8KpDPjNNWjWNzo1qUi06zt0';
-    const GEMINI_MODEL = 'gemini-2.0-flash';
+    // API key is now stored securely on the server
+    // No need to expose it in the frontend code
 
     // ============================================================================
     // STATE MANAGEMENT
@@ -1321,43 +1321,27 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
     }
 
     // ============================================================================
-    // GEMINI API INTEGRATION
+    // GEMINI API INTEGRATION (Secure - via Cloud Function)
     // ============================================================================
     async function callGemini(systemPrompt, userMessage) {
-      if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-        throw new Error('Please configure your Gemini API key');
-      }
+      // Call the secure Cloud Function instead of exposing API key
+      const callGeminiAgent = firebase.functions().httpsCallable('callGeminiAgent');
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+      try {
+        const result = await callGeminiAgent({
+          systemPrompt: systemPrompt,
+          userMessage: userMessage
+        });
 
-      const requestBody = {
-        system_instruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        contents: [{
-          role: 'user',
-          parts: [{ text: userMessage }]
-        }],
-        generationConfig: {
-          temperature: 0.9,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048
+        if (result.data.success) {
+          return result.data.response;
+        } else {
+          throw new Error('No response from Gemini');
         }
-      };
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+      } catch (error) {
+        console.error('Cloud Function error:', error);
+        throw new Error(`Gemini API error: ${error.message}`);
       }
-
-      const data = await response.json();
-      return data.candidates[0].content.parts[0].text;
     }
 
     // ============================================================================
