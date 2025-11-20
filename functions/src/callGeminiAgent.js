@@ -12,6 +12,7 @@ const GEMINI_MODEL = 'gemini-2.0-flash';
 /**
  * Callable Cloud Function to call Gemini API securely
  * This keeps the API key server-side and never exposes it to the client
+ * Supports multi-turn conversations with history
  */
 async function callGeminiAgent(data, context) {
   try {
@@ -32,19 +33,43 @@ async function callGeminiAgent(data, context) {
       );
     }
 
-    const { systemPrompt, userMessage } = data;
+    const { systemPrompt, userMessage, conversationHistory } = data;
 
     // Build Gemini API request
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+    // Build contents array with conversation history
+    const contents = [];
+
+    // Add conversation history if provided
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      conversationHistory.forEach(msg => {
+        // Map our message format to Gemini's format
+        if (msg.role === 'user') {
+          contents.push({
+            role: 'user',
+            parts: [{ text: msg.text }]
+          });
+        } else if (msg.role === 'model' || msg.role === 'assistant') {
+          contents.push({
+            role: 'model',
+            parts: [{ text: msg.text }]
+          });
+        }
+      });
+    }
+
+    // Add current user message
+    contents.push({
+      role: 'user',
+      parts: [{ text: userMessage }]
+    });
 
     const requestBody = {
       system_instruction: {
         parts: [{ text: systemPrompt }]
       },
-      contents: [{
-        role: 'user',
-        parts: [{ text: userMessage }]
-      }],
+      contents: contents,
       generationConfig: {
         temperature: 0.9,
         topK: 40,

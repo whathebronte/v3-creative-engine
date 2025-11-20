@@ -385,6 +385,45 @@
       border-left: 3px solid #FF6600;
     }
 
+    .message-prompt {
+      border-left: 3px solid #00FF00;
+      background: linear-gradient(135deg, #1a3a1a 0%, #2a2a2a 100%);
+      box-shadow: 0 4px 12px rgba(0, 255, 0, 0.1);
+    }
+
+    .prompt-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #e8ffe8;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      margin: 8px 0;
+      font-family: 'Courier New', monospace;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .prompt-text::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .prompt-text::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+
+    .prompt-text::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 0, 0.3);
+      border-radius: 4px;
+    }
+
+    .prompt-text::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 255, 0, 0.5);
+    }
+
     .message-header {
       font-size: 11px;
       font-weight: 600;
@@ -897,7 +936,7 @@
                 <span>Creative Prompter</span>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="toggleCreative" checked>
+                <input type="checkbox" id="toggleCreative">
                 <span class="toggle-slider"></span>
               </label>
             </div>
@@ -1023,6 +1062,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
 
   <script>
     // ============================================================================
@@ -1053,7 +1093,7 @@
     let state = {
       currentMarket: 'japan',
       marketingEnabled: true,
-      creativeEnabled: true,
+      creativeEnabled: false,  // Creative Prompter off by default - workflow starts with Marketing Manager
       lastFinalizedPrompt: null,
       knowledgeFiles: [],
       currentChatMessages: [],
@@ -1061,6 +1101,11 @@
       protocols: {
         marketing: '',
         creative: ''
+      },
+      // Separate conversation histories for each agent
+      conversationHistories: {
+        marketing: [],
+        creative: []
       }
     };
 
@@ -1153,9 +1198,15 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
         state.marketingEnabled = toggleMarketing.checked;
         updateOnlineStatus();
       });
-      toggleCreative.addEventListener('change', () => {
+      toggleCreative.addEventListener('change', async () => {
         state.creativeEnabled = toggleCreative.checked;
         updateOnlineStatus();
+
+        // If Creative Prompter is being enabled and there's existing marketing history,
+        // automatically process the marketing brief
+        if (state.creativeEnabled && state.conversationHistories.marketing && state.conversationHistories.marketing.length > 0) {
+          await processMarketingBriefWithCreative();
+        }
       });
       chatSendBtn.addEventListener('click', sendMessage);
       chatInput.addEventListener('keypress', (e) => {
@@ -1323,18 +1374,41 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
     // ============================================================================
     // GEMINI API INTEGRATION (Secure - via Cloud Function)
     // ============================================================================
-    async function callGemini(systemPrompt, userMessage) {
+    async function callGemini(systemPrompt, userMessage, agentType = null) {
       // Call the secure Cloud Function instead of exposing API key
       const callGeminiAgent = firebase.functions().httpsCallable('callGeminiAgent');
 
       try {
+        // Get conversation history for this specific agent
+        const conversationHistory = agentType ? state.conversationHistories[agentType] || [] : [];
+
         const result = await callGeminiAgent({
           systemPrompt: systemPrompt,
-          userMessage: userMessage
+          userMessage: userMessage,
+          conversationHistory: conversationHistory
         });
 
         if (result.data.success) {
-          return result.data.response;
+          const response = result.data.response;
+
+          // Update conversation history for this agent
+          if (agentType) {
+            // Add user message
+            state.conversationHistories[agentType].push({
+              role: 'user',
+              text: userMessage
+            });
+
+            // Add model response
+            state.conversationHistories[agentType].push({
+              role: 'model',
+              text: response
+            });
+
+            console.log(`[${agentType}] Conversation history updated:`, state.conversationHistories[agentType].length, 'messages');
+          }
+
+          return response;
         } else {
           throw new Error('No response from Gemini');
         }
@@ -1347,6 +1421,58 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
     // ============================================================================
     // CHAT FUNCTIONALITY
     // ============================================================================
+
+    /**
+     * Process existing marketing brief with Creative Prompter
+     * Called when Creative Prompter is enabled after marketing conversation
+     */
+    async function processMarketingBriefWithCreative() {
+      if (state.isProcessing) return;
+
+      state.isProcessing = true;
+      chatSendBtn.disabled = true;
+      chatStatus.textContent = 'Processing marketing brief...';
+
+      try {
+        showTypingIndicator('Creative Prompter');
+
+        // Build full marketing context for Creative Prompter
+        const marketingHistory = state.conversationHistories.marketing || [];
+        let fullMarketingContext = "Here is the complete marketing discussion:\n\n";
+
+        marketingHistory.forEach(msg => {
+          if (msg.role === 'user') {
+            fullMarketingContext += `User: ${msg.text}\n\n`;
+          } else if (msg.role === 'model') {
+            fullMarketingContext += `Marketing Manager: ${msg.text}\n\n`;
+          }
+        });
+
+        fullMarketingContext += `Based on this complete marketing brief and discussion, create an optimized image generation prompt that captures all the key themes, messages, and creative direction discussed.`;
+
+        const creativeResponse = await callGemini(
+          state.protocols.creative,
+          fullMarketingContext,
+          'creative'
+        );
+
+        removeTypingIndicator();
+        addChatMessage(creativeResponse, 'agent', 'creative', 'Creative Prompter');
+        extractFinalPrompt(creativeResponse);
+
+        showToast('✓ Creative Prompter processed marketing brief');
+      } catch (error) {
+        console.error('Error processing marketing brief:', error);
+        removeTypingIndicator();
+        addChatMessage(`Error: ${error.message}`, 'agent', 'creative', 'System');
+        showToast('Failed to process marketing brief');
+      } finally {
+        state.isProcessing = false;
+        chatSendBtn.disabled = false;
+        chatStatus.textContent = 'Ready';
+      }
+    }
+
     async function sendMessage() {
       const message = chatInput.value.trim();
       if (!message || state.isProcessing) return;
@@ -1369,15 +1495,31 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
       try {
         if (state.marketingEnabled) {
           showTypingIndicator('Marketing Manager');
-          const marketingResponse = await callGemini(state.protocols.marketing, message);
+          const marketingResponse = await callGemini(state.protocols.marketing, message, 'marketing');
           removeTypingIndicator();
           addChatMessage(marketingResponse, 'agent', 'marketing', 'Marketing Manager');
 
           if (state.creativeEnabled) {
             showTypingIndicator('Creative Prompter');
+
+            // Build full marketing context for Creative Prompter
+            const marketingHistory = state.conversationHistories.marketing || [];
+            let fullMarketingContext = "Here is the complete marketing discussion:\n\n";
+
+            marketingHistory.forEach(msg => {
+              if (msg.role === 'user') {
+                fullMarketingContext += `User: ${msg.text}\n\n`;
+              } else if (msg.role === 'model') {
+                fullMarketingContext += `Marketing Manager: ${msg.text}\n\n`;
+              }
+            });
+
+            fullMarketingContext += `Based on this complete marketing brief and discussion, create an optimized image generation prompt that captures all the key themes, messages, and creative direction discussed.`;
+
             const creativeResponse = await callGemini(
               state.protocols.creative,
-              `Based on this marketing brief, create an optimized image generation prompt:\n\n${marketingResponse}`
+              fullMarketingContext,
+              'creative'
             );
             removeTypingIndicator();
             addChatMessage(creativeResponse, 'agent', 'creative', 'Creative Prompter');
@@ -1385,7 +1527,7 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
           }
         } else if (state.creativeEnabled) {
           showTypingIndicator('Creative Prompter');
-          const creativeResponse = await callGemini(state.protocols.creative, message);
+          const creativeResponse = await callGemini(state.protocols.creative, message, 'creative');
           removeTypingIndicator();
           addChatMessage(creativeResponse, 'agent', 'creative', 'Creative Prompter');
           extractFinalPrompt(creativeResponse);
@@ -1537,11 +1679,56 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
     // MCP BRIDGE
     // ============================================================================
     function extractFinalPrompt(response) {
-      const match = response.match(/FINAL PROMPT:\s*(.+?)(?:\n\n|$)/is);
-      if (match) {
-        state.lastFinalizedPrompt = match[1].trim();
+      // Try to extract the full AI Generation Prompts section
+      // Pattern: (A) AI Generation Prompts ... until Step 5
+      const aiPromptsMatch = response.match(/\(A\)\s*AI Generation Prompts([\s\S]*?)(?=Step 5:|$)/i);
+
+      if (aiPromptsMatch) {
+        // Extract the full section including the heading
+        const fullSection = '(A) AI Generation Prompts' + aiPromptsMatch[1].trim();
+        state.lastFinalizedPrompt = fullSection;
+
+        // Display the clean prompt as a separate, highlighted message
+        addCleanPromptMessage(state.lastFinalizedPrompt);
+
+        // Enable the Send to Generator button
         sendToGeneratorBtn.disabled = false;
+        showToast('✓ Prompt ready to send to Creative Generator');
+        console.log('[Creative Prompter] Extracted AI Generation Prompts section');
+        return;
       }
+
+      // Fallback: Try to extract prompt from "FINAL PROMPT:" format (for backward compatibility)
+      const finalPromptMatch = response.match(/\*\*FINAL PROMPT:\*\*\s*(.+?)(?:\n\n|$)/is) ||
+                               response.match(/FINAL PROMPT:\s*(.+?)(?:\n\n|$)/is);
+
+      if (finalPromptMatch) {
+        state.lastFinalizedPrompt = finalPromptMatch[1].trim();
+
+        // Display the clean prompt as a separate, highlighted message
+        addCleanPromptMessage(state.lastFinalizedPrompt);
+
+        // Enable the Send to Generator button
+        sendToGeneratorBtn.disabled = false;
+        showToast('✓ Prompt ready to send to Creative Generator');
+        console.log('[Creative Prompter] Extracted FINAL PROMPT section');
+      }
+    }
+
+    function addCleanPromptMessage(promptText) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message message-agent message-prompt';
+
+      // Preserve line breaks and formatting
+      const formattedText = promptText.replace(/\n/g, '<br>');
+
+      messageDiv.innerHTML = `
+        <div class="message-header">🎯 AI Generation Prompts (Ready for Creative Generator)</div>
+        <div class="prompt-text">${formattedText}</div>
+        <div class="message-time">${new Date().toLocaleTimeString()}</div>
+      `;
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     async function sendToGenerator() {
