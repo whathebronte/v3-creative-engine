@@ -34,7 +34,7 @@ async function processJob(snap, context) {
     if (job.type === 'image') {
       result = await gemini.generateImage(job.prompt, job.format || '1:1');
 
-      // Phase 2: Upload actual image data to Cloud Storage if available
+      // Upload actual image data to Cloud Storage if available
       if (result.data) {
         console.log(`[JobProcessor] Uploading image to Cloud Storage for job ${jobId}`);
         const storageUrl = await uploadImageToStorage(jobId, result.data);
@@ -42,29 +42,41 @@ async function processJob(snap, context) {
         delete result.data; // Remove base64 data from result
       }
 
+      const processingTimeMs = Date.now() - startTime;
+
+      await jobRef.update({
+        status: 'complete',
+        result: { url: result.url, metadata: result.metadata },
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        processingTimeMs,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`[JobProcessor] Job ${jobId} completed in ${processingTimeMs}ms`);
+
     } else {
+      // VIDEO: Start long-running operation
       result = await gemini.generateVideo(job.prompt, job.format || '16:9');
 
-      // Phase 2: Upload actual video data to Cloud Storage if available
-      if (result.data) {
-        console.log(`[JobProcessor] Uploading video to Cloud Storage for job ${jobId}`);
-        const storageUrl = await uploadVideoToStorage(jobId, result.data);
-        result.url = storageUrl;
-        delete result.data; // Remove base64 data from result
-      }
+      const processingTimeMs = Date.now() - startTime;
+
+      // Update job with operation ID and set status to 'generating'
+      await jobRef.update({
+        status: 'generating',
+        operationId: result.operationId,
+        result: {
+          metadata: result.metadata,
+          estimatedMinutes: '3-5',
+          message: 'Video generation in progress...'
+        },
+        startedAt: admin.firestore.FieldValue.serverTimestamp(),
+        processingTimeMs,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`[JobProcessor] Video operation started: ${result.operationId}`);
+      console.log(`[JobProcessor] Job ${jobId} will be polled for completion`);
     }
-
-    const processingTimeMs = Date.now() - startTime;
-
-    await jobRef.update({
-      status: 'complete',
-      result: { url: result.url, metadata: result.metadata },
-      processedAt: admin.firestore.FieldValue.serverTimestamp(),
-      processingTimeMs,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log(`[JobProcessor] Job ${jobId} completed in ${processingTimeMs}ms`);
 
   } catch (error) {
     console.error(`[JobProcessor] Job ${jobId} failed:`, error);

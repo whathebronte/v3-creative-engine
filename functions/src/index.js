@@ -22,6 +22,7 @@ const { expandImageJob } = require('./expandImageJob');
 const { iterateJob } = require('./iterateJob');
 const { importPrompt } = require('./importPrompt');
 const { callGeminiAgent } = require('./callGeminiAgent');
+const { pollVideoOperations } = require('./videoPoller');
 
 // Job processor (Firestore trigger)
 exports.processJob = functions.firestore
@@ -51,5 +52,10 @@ exports.importPrompt = functions.https.onRequest(importPrompt);
 
 // Gemini Agent - Secure server-side API calls (Callable)
 exports.callGeminiAgent = functions.https.onCall(callGeminiAgent);
+
+// Video Operation Poller - Checks status of long-running video operations (PubSub, scheduled every minute)
+exports.pollVideoOperations = functions.pubsub
+  .topic('video-operations-poll')
+  .onPublish(pollVideoOperations);
 
 console.log('[V3 Functions] Cloud Functions initialized');
