@@ -32,45 +32,11 @@ class GeminiClient {
     console.log(`[VertexAI] Generating image with Imagen 3: "${prompt}"`);
 
     try {
-      // Get Imagen 3 model
-      const generativeModel = this.vertexAI.getGenerativeModel({
-        model: 'imagen-3.0-generate-001',
-      });
-
       const aspectRatio = this._formatToAspectRatio(format);
 
-      // Generate image
-      const request = {
-        prompt: prompt,
-        aspectRatio: aspectRatio,
-        numberOfImages: 1,
-        // Optional parameters for better quality
-        addWatermark: false, // Set to true if required by policy
-        safetyFilterLevel: 'block_some',
-        personGeneration: 'allow_adult',
-      };
+      console.log(`[VertexAI] Calling Imagen 3 API directly with aspectRatio: ${aspectRatio}`);
 
-      console.log(`[VertexAI] Request parameters:`, request);
-
-      const result = await generativeModel.generateContent({
-        contents: [{
-          role: 'user',
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.4,
-          topK: 32,
-          topP: 1,
-        }
-      });
-
-      // Note: The actual Imagen API might return differently
-      // This is based on the Vertex AI Generative AI SDK structure
-      // We may need to adjust based on actual API response
-
-      // For Imagen specifically, we need to use the preview API
+      // Use the direct REST API call for Imagen
       const imageResponse = await this._generateImageDirect(prompt, aspectRatio);
 
       return {
