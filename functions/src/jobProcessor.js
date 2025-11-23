@@ -55,27 +55,51 @@ async function processJob(snap, context) {
       console.log(`[JobProcessor] Job ${jobId} completed in ${processingTimeMs}ms`);
 
     } else {
-      // VIDEO: Start long-running operation
-      result = await gemini.generateVideo(job.prompt, job.format || '16:9');
+      // VIDEO: May be synchronous or asynchronous depending on API
+      // Pass sourceImageUrl for image-to-video, or null for text-to-video
+      result = await gemini.generateVideo(job.prompt, job.format || '16:9', job.sourceImageUrl || null);
 
       const processingTimeMs = Date.now() - startTime;
 
-      // Update job with operation ID and set status to 'generating'
-      await jobRef.update({
-        status: 'generating',
-        operationId: result.operationId,
-        result: {
-          metadata: result.metadata,
-          estimatedMinutes: '3-5',
-          message: 'Video generation in progress...'
-        },
-        startedAt: admin.firestore.FieldValue.serverTimestamp(),
-        processingTimeMs,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      if (result.data) {
+        // Synchronous response - video ready immediately!
+        console.log(`[JobProcessor] Video generated synchronously!`);
 
-      console.log(`[JobProcessor] Video operation started: ${result.operationId}`);
-      console.log(`[JobProcessor] Job ${jobId} will be polled for completion`);
+        const storageUrl = await uploadVideoToStorage(jobId, result.data);
+
+        await jobRef.update({
+          status: 'complete',
+          result: {
+            url: storageUrl,
+            metadata: result.metadata
+          },
+          processedAt: admin.firestore.FieldValue.serverTimestamp(),
+          processingTimeMs,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        console.log(`[JobProcessor] Job ${jobId} completed synchronously in ${processingTimeMs}ms`);
+
+      } else if (result.operationId) {
+        // Async operation - needs polling
+        await jobRef.update({
+          status: 'generating',
+          operationId: result.operationId,
+          result: {
+            metadata: result.metadata,
+            estimatedMinutes: '3-5',
+            message: 'Video generation in progress...'
+          },
+          startedAt: admin.firestore.FieldValue.serverTimestamp(),
+          processingTimeMs,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        console.log(`[JobProcessor] Video operation started: ${result.operationId}`);
+        console.log(`[JobProcessor] Job ${jobId} will be polled for completion`);
+      } else {
+        throw new Error('Unexpected video generation response format');
+      }
     }
 
   } catch (error) {
@@ -87,6 +111,40 @@ async function processJob(snap, context) {
     });
     throw error;
   }
+}
+
+/**
+ * Upload video to Cloud Storage
+ * @param {string} jobId - Job ID
+ * @param {string} base64Data - Base64 encoded video data
+ * @returns {string} Public URL of uploaded video
+ */
+async function uploadVideoToStorage(jobId, base64Data) {
+  const bucket = admin.storage().bucket();
+  const fileName = `videos/${jobId}.mp4`;
+  const file = bucket.file(fileName);
+
+  // Convert base64 to buffer
+  const buffer = Buffer.from(base64Data, 'base64');
+
+  console.log(`[JobProcessor] Uploading video: ${fileName} (${buffer.length} bytes)`);
+
+  await file.save(buffer, {
+    metadata: {
+      contentType: 'video/mp4',
+      metadata: {
+        jobId: jobId,
+        generatedAt: new Date().toISOString()
+      }
+    },
+    public: true,
+    validation: false
+  });
+
+  const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+  console.log(`[JobProcessor] Video uploaded: ${publicUrl}`);
+
+  return publicUrl;
 }
 
 /**

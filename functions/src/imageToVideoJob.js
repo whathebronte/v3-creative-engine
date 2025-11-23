@@ -28,12 +28,18 @@ async function imageToVideoJob(data, context) {
       throw new Error('Can only convert images to video');
     }
 
-    // Create new video job with same prompt
+    // Create new video job with image reference
+    // For image-to-video, use a simple motion prompt instead of the original image prompt
+    const videoPrompt = 'Animate this image with subtle, natural movement. Add gentle camera motion and atmospheric effects.';
+
     const newJobRef = await db.collection('jobs').add({
       status: 'pending',
       type: 'video',
-      prompt: originalJob.prompt,
+      prompt: videoPrompt,
       format: originalJob.format || '16:9',
+      sourceImageUrl: originalJob.result?.url, // Pass the image URL
+      sourceImageJobId: jobId, // Reference to original image job
+      originalImagePrompt: originalJob.prompt, // Store original prompt for reference
       context: {
         source: 'image-to-video',
         originalJobId: jobId,

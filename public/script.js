@@ -134,6 +134,9 @@ function setupRealtimeListeners() {
 
       // Check for completed jobs we're tracking
       checkActiveJobs();
+
+      // Update status indicator
+      updateStatusIndicator();
     }, (error) => {
       console.error('[YTM Generator] Error listening to jobs:', error);
     });
@@ -473,6 +476,7 @@ async function expandAsset() {
 
 /**
  * Animate - Convert current image to video (i2v)
+ * Uses Veo 3 Fast for image-to-video generation
  */
 async function animateAsset() {
   if (!state.currentAsset) return;
@@ -635,6 +639,111 @@ function checkActiveJobs() {
       hideLightboxLoading();
     }
   });
+}
+
+// ============================================================================
+// LIVE STATUS INDICATOR
+// ============================================================================
+
+/**
+ * Update the status indicator based on active jobs
+ */
+function updateStatusIndicator() {
+  const statusIndicator = document.getElementById('statusIndicator');
+  const statusMessage = document.getElementById('statusMessage');
+  const statusTime = document.getElementById('statusTime');
+
+  if (!statusIndicator || !statusMessage || !statusTime) return;
+
+  // Find active jobs (pending, processing, or generating)
+  const activeJobs = state.allJobs.filter(job =>
+    job.status === 'pending' ||
+    job.status === 'processing' ||
+    job.status === 'generating'
+  );
+
+  // If no active jobs, hide the indicator
+  if (activeJobs.length === 0) {
+    statusIndicator.classList.add('hidden');
+    return;
+  }
+
+  // Show indicator
+  statusIndicator.classList.remove('hidden');
+
+  // Get the most recent active job
+  const currentJob = activeJobs[0];
+
+  // Update status based on job type and status
+  if (currentJob.type === 'image') {
+    // Image generation - 30-60 seconds
+    statusIndicator.className = 'status-indicator processing';
+
+    if (currentJob.status === 'pending') {
+      statusMessage.textContent = 'Starting image generation...';
+      statusTime.textContent = 'Estimated: 30-60 seconds';
+    } else {
+      statusMessage.textContent = 'Generating image...';
+      statusTime.textContent = 'Estimated: 30-60 seconds';
+    }
+
+  } else if (currentJob.type === 'video') {
+    // Video generation - 3-5 minutes
+    statusIndicator.className = 'status-indicator generating';
+
+    if (currentJob.status === 'pending') {
+      statusMessage.textContent = 'Starting video generation...';
+      statusTime.textContent = 'Estimated: 3-5 minutes';
+    } else if (currentJob.status === 'generating') {
+      statusMessage.textContent = 'Generating video...';
+
+      // Calculate elapsed time if we have createdAt
+      if (currentJob.createdAt) {
+        const elapsed = getElapsedTime(currentJob.createdAt);
+        const remaining = Math.max(0, 180 - elapsed); // 3 minutes = 180 seconds
+        statusTime.textContent = `Estimated: ${formatRemainingTime(remaining)} remaining`;
+      } else {
+        statusTime.textContent = 'Estimated: 3-5 minutes';
+      }
+    } else {
+      statusMessage.textContent = 'Processing video...';
+      statusTime.textContent = 'Estimated: 3-5 minutes';
+    }
+  } else {
+    // Other job types
+    statusIndicator.className = 'status-indicator processing';
+    statusMessage.textContent = 'Processing...';
+    statusTime.textContent = 'Please wait...';
+  }
+
+  // If multiple jobs, show count
+  if (activeJobs.length > 1) {
+    statusMessage.textContent += ` (${activeJobs.length} jobs)`;
+  }
+}
+
+/**
+ * Get elapsed time in seconds since job creation
+ */
+function getElapsedTime(timestamp) {
+  if (!timestamp) return 0;
+
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return Math.floor((new Date() - date) / 1000);
+}
+
+/**
+ * Format remaining time in a human-readable way
+ */
+function formatRemainingTime(seconds) {
+  if (seconds <= 0) return 'Almost done';
+  if (seconds < 60) return `${seconds}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (remainingSeconds === 0) return `${minutes}m`;
+  return `${minutes}m ${remainingSeconds}s`;
 }
 
 // ============================================================================
@@ -1068,7 +1177,7 @@ function showHelpModal() {
             <span class="help-icon">🎬</span>
             <div class="help-text">
               <strong>Animate (i2v)</strong>
-              <p>Converts the current image into a 5-second video with subtle animation and movement. Only available for images.</p>
+              <p><em>Temporarily unavailable</em> - Converts the current image into a 5-second video with subtle animation and movement. Google's Veo video API is not yet publicly accessible. Feature will be enabled when API becomes available.</p>
             </div>
           </div>
         </div>

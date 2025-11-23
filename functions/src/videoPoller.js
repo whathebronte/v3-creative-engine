@@ -67,31 +67,41 @@ async function pollVideoOperations(message, context) {
             });
             errors++;
 
-          } else if (status.video) {
-            // Operation succeeded - upload video
-            console.log(`[VideoPoller] Job ${jobId} completed! Uploading video...`);
+          } else if (status.videoUri) {
+            // Operation succeeded - download from Gemini API and upload to Cloud Storage
+            console.log(`[VideoPoller] Job ${jobId} completed! Downloading video from: ${status.videoUri}`);
 
-            const storageUrl = await uploadVideoToStorage(jobId, status.video);
+            try {
+              const storageUrl = await downloadAndUploadVideo(jobId, status.videoUri, gemini.apiKey);
 
-            await doc.ref.update({
-              status: 'complete',
-              result: {
-                url: storageUrl,
-                metadata: job.result.metadata
-              },
-              processedAt: admin.firestore.FieldValue.serverTimestamp(),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
+              await doc.ref.update({
+                status: 'complete',
+                result: {
+                  url: storageUrl,
+                  metadata: job.result.metadata
+                },
+                processedAt: admin.firestore.FieldValue.serverTimestamp(),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+              });
 
-            console.log(`[VideoPoller] Job ${jobId} video uploaded to: ${storageUrl}`);
-            completed++;
+              console.log(`[VideoPoller] Job ${jobId} video uploaded to: ${storageUrl}`);
+              completed++;
+            } catch (downloadError) {
+              console.error(`[VideoPoller] Failed to download/upload video:`, downloadError);
+              await doc.ref.update({
+                status: 'error',
+                error: `Failed to download video: ${downloadError.message}`,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+              });
+              errors++;
+            }
 
           } else {
             // Unexpected state
-            console.error(`[VideoPoller] Job ${jobId} done but no video or error`);
+            console.error(`[VideoPoller] Job ${jobId} done but no video URI or error`);
             await doc.ref.update({
               status: 'error',
-              error: 'Operation completed but no video data found',
+              error: 'Operation completed but no video URI found',
               updatedAt: admin.firestore.FieldValue.serverTimestamp()
             });
             errors++;
@@ -108,6 +118,24 @@ async function pollVideoOperations(message, context) {
 
       } catch (error) {
         console.error(`[VideoPoller] Error checking job ${jobId}:`, error);
+
+        // If 404 error, the operation likely expired or was cleaned up
+        const is404 = error.message && error.message.includes('404');
+
+        // Check if job is older than 10 minutes
+        const jobAge = job.createdAt ? (Date.now() - job.createdAt.toMillis()) : 0;
+        const isOld = jobAge > 10 * 60 * 1000; // 10 minutes
+
+        if (is404 && isOld) {
+          // Mark as expired
+          console.log(`[VideoPoller] Job ${jobId} operation not found (404) and job is old (${Math.floor(jobAge / 60000)}min). Marking as expired.`);
+          await doc.ref.update({
+            status: 'error',
+            error: 'Video generation operation expired or not found',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
         errors++;
       }
     }
@@ -157,6 +185,57 @@ async function uploadVideoToStorage(jobId, base64Data) {
 
   const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
   console.log(`[VideoPoller] Video uploaded: ${publicUrl}`);
+
+  return publicUrl;
+}
+
+/**
+ * Download video from Gemini API URI and upload to Cloud Storage
+ * @param {string} jobId - Job ID
+ * @param {string} videoUri - Gemini API video download URI
+ * @param {string} apiKey - Gemini API key for authentication
+ * @returns {string} Public URL of uploaded video
+ */
+async function downloadAndUploadVideo(jobId, videoUri, apiKey) {
+  console.log(`[VideoPoller] Downloading video from Gemini API: ${videoUri}`);
+
+  // Download video from Gemini API
+  // Add API key to the request (use & since URL already has ?alt=media)
+  const downloadUrl = `${videoUri}&key=${apiKey}`;
+
+  console.log(`[VideoPoller] Download URL: ${downloadUrl}`);
+
+  const response = await fetch(downloadUrl);
+
+  if (!response.ok) {
+    throw new Error(`Failed to download video: ${response.status} ${response.statusText}`);
+  }
+
+  const videoBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(videoBuffer);
+
+  console.log(`[VideoPoller] Video downloaded: ${buffer.length} bytes`);
+
+  // Upload to Cloud Storage
+  const bucket = admin.storage().bucket();
+  const fileName = `videos/${jobId}.mp4`;
+  const file = bucket.file(fileName);
+
+  await file.save(buffer, {
+    metadata: {
+      contentType: 'video/mp4',
+      metadata: {
+        jobId: jobId,
+        generatedAt: new Date().toISOString(),
+        source: 'gemini-api-veo'
+      }
+    },
+    public: true,
+    validation: false
+  });
+
+  const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+  console.log(`[VideoPoller] Video uploaded to Cloud Storage: ${publicUrl}`);
 
   return publicUrl;
 }
