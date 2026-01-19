@@ -896,7 +896,7 @@
           <span class="logo-text">YTM Agent Collective</span>
         </div>
         <div class="header-actions">
-          <a href="index.html" class="open-generator-btn">
+          <a href="#" id="openGeneratorBtn" class="open-generator-btn" onclick="openGenerator(); return false;">
             <span>▶</span>
             <span>Open YTM Creative Generator</span>
           </a>
@@ -1732,6 +1732,11 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+    function openGenerator() {
+      // Open Creative Generator with current market pre-selected
+      window.open(`index.html?market=${state.currentMarket}`, '_blank');
+    }
+
     async function sendToGenerator() {
       if (!state.lastFinalizedPrompt) return;
 
@@ -1740,7 +1745,8 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
       sendToGeneratorBtn.querySelector('.btn-text').textContent = 'Sending...';
 
       const encodedPrompt = encodeURIComponent(state.lastFinalizedPrompt);
-      window.open(`index.html?prompt=${encodedPrompt}`, '_blank');
+      // Include market parameter along with prompt
+      window.open(`index.html?prompt=${encodedPrompt}&market=${state.currentMarket}`, '_blank');
 
       await db.collection('prompt_transfers').add({
         prompt: state.lastFinalizedPrompt,

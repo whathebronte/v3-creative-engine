@@ -31,7 +31,8 @@ let state = {
   currentAspectRatio: '9:16',   // Default aspect ratio
   currentPrompt: '',            // Current prompt text
   activeJobs: new Map(),        // Track active generation jobs
-  allJobs: []                   // All jobs for debugging
+  allJobs: [],                  // All jobs for debugging
+  currentCountry: 'korea'       // Currently selected country folder
 };
 
 // ============================================================================
@@ -55,21 +56,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupEventListeners() {
   // Generation buttons
-  document.getElementById('generateOne').addEventListener('click', generateOne);
-  document.getElementById('generateAll').addEventListener('click', generateAll);
+  document.getElementById('generateImage').addEventListener('click', generateImage);
+  document.getElementById('generateVideo').addEventListener('click', generateVideo);
 
   // Aspect ratio selector
   document.getElementById('aspectRatio').addEventListener('change', changeAspectRatio);
 
   // Action buttons
   document.getElementById('upscaleBtn').addEventListener('click', upscaleAsset);
-  document.getElementById('iterateBtn').addEventListener('click', iterateAsset);
+  document.getElementById('iterateBtn').addEventListener('click', randomIterateAsset);
+  document.getElementById('promptIterateBtn').addEventListener('click', promptIterateAsset);
   document.getElementById('expandBtn').addEventListener('click', expandAsset);
   document.getElementById('animateBtn').addEventListener('click', animateAsset);
 
   // Bottom buttons
-  document.getElementById('saveToGallery').addEventListener('click', saveToGallery);
+  document.getElementById('saveToGallery').addEventListener('click', showCountryModal);
   document.getElementById('downloadBtn').addEventListener('click', downloadAsset);
+
+  // Gallery Upload button
+  document.getElementById('uploadBtn').addEventListener('click', showUploadModal);
+
+  // Country tabs
+  document.querySelectorAll('.country-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchCountry(tab.dataset.country));
+  });
+
+  // Modal buttons
+  document.querySelectorAll('.country-select-btn').forEach(btn => {
+    btn.addEventListener('click', () => saveToCountry(btn.dataset.country));
+  });
+
+  document.querySelectorAll('.country-upload-btn').forEach(btn => {
+    btn.addEventListener('click', () => uploadToCountry(btn.dataset.country));
+  });
+
+  document.querySelectorAll('.modal-cancel-btn').forEach(btn => {
+    btn.addEventListener('click', closeModals);
+  });
 
   // Prompt input
   document.getElementById('promptInput').addEventListener('input', updatePrompt);
@@ -229,7 +252,10 @@ function parsePromptScenes(prompt) {
 /**
  * Generate 1 - Generates only the first scene from the prompt
  */
-async function generateOne() {
+/**
+ * Generate Image - Creates a single image from the prompt
+ */
+async function generateImage() {
   try {
     const promptInput = document.getElementById('promptInput');
     const prompt = promptInput.value.trim();
@@ -239,42 +265,79 @@ async function generateOne() {
       return;
     }
 
-    console.log('[YTM Generator] Generate One clicked');
-
-    // Parse scenes and get first one
-    const scenes = parsePromptScenes(prompt);
-    const firstScene = scenes[0];
-
-    console.log(`[YTM Generator] Extracted first scene: "${firstScene}"`);
+    console.log('[YTM Generator] Generate Image clicked');
 
     // Show loading in lightbox
-    showLightboxLoading('Generating first scene...');
+    showLightboxLoading('Generating image...');
 
     // Call backend to create job
     const createTestJobFn = functions.httpsCallable('createTestJob');
     const result = await createTestJobFn({
       type: 'image',
-      prompt: firstScene,
-      format: state.currentAspectRatio,
-      sceneNumber: 1
+      prompt: prompt,
+      format: state.currentAspectRatio
     });
 
     const jobId = result.data.jobId;
-    console.log(`[YTM Generator] Job created: ${jobId}`);
+    console.log(`[YTM Generator] Image job created: ${jobId}`);
 
     // Track this job
     state.activeJobs.set(jobId, {
       type: 'generation',
-      scene: 1,
-      prompt: firstScene
+      prompt: prompt
     });
 
     // Provide feedback
-    showTemporaryMessage('generateOne', 'Generating...');
+    showTemporaryMessage('generateImage', 'Generating...');
 
   } catch (error) {
-    console.error('[YTM Generator] Generate One failed:', error);
-    alert('Failed to generate: ' + error.message);
+    console.error('[YTM Generator] Generate Image failed:', error);
+    alert('Failed to generate image: ' + error.message);
+    hideLightboxLoading();
+  }
+}
+
+/**
+ * Generate Video - Creates a text-to-video from the prompt
+ */
+async function generateVideo() {
+  try {
+    const promptInput = document.getElementById('promptInput');
+    const prompt = promptInput.value.trim();
+
+    if (!prompt) {
+      alert('Please enter a prompt first');
+      return;
+    }
+
+    console.log('[YTM Generator] Generate Video clicked');
+
+    // Show loading in lightbox
+    showLightboxLoading('Generating video...');
+
+    // Call backend to create video job
+    const createTestJobFn = functions.httpsCallable('createTestJob');
+    const result = await createTestJobFn({
+      type: 'video',
+      prompt: prompt,
+      format: state.currentAspectRatio || '9:16'  // Default to 9:16 for videos
+    });
+
+    const jobId = result.data.jobId;
+    console.log(`[YTM Generator] Video job created: ${jobId}`);
+
+    // Track this job
+    state.activeJobs.set(jobId, {
+      type: 'video-generation',
+      prompt: prompt
+    });
+
+    // Provide feedback
+    showTemporaryMessage('generateVideo', 'Generating video...');
+
+  } catch (error) {
+    console.error('[YTM Generator] Generate Video failed:', error);
+    alert('Failed to generate video: ' + error.message);
     hideLightboxLoading();
   }
 }
@@ -402,35 +465,84 @@ async function upscaleAsset() {
 /**
  * Iterate - Create variation of current lightbox asset
  */
-async function iterateAsset() {
+/**
+ * Random Iterate - Creates random variation of current asset
+ */
+async function randomIterateAsset() {
   if (!state.currentAsset) return;
 
   try {
-    console.log('[YTM Generator] Iterating asset:', state.currentAsset.id);
+    console.log('[YTM Generator] Random iterating asset:', state.currentAsset.id);
 
     showTemporaryMessage('iterateBtn', 'Creating variation...');
-    showLightboxLoading('Creating variation...');
+    showLightboxLoading('Creating random variation...');
 
-    // Note: This function needs to be created by Marco
     const iterateFn = functions.httpsCallable('iterateJob');
     const result = await iterateFn({
       jobId: state.currentAsset.id
     });
 
     const newJobId = result.data.newJobId;
-    console.log(`[YTM Generator] Iterate job created: ${newJobId}`);
+    console.log(`[YTM Generator] Random iterate job created: ${newJobId}`);
 
     // Track this job
     state.activeJobs.set(newJobId, {
-      type: 'iterate',
+      type: 'random-iterate',
       originalId: state.currentAsset.id
     });
 
     showTemporaryMessage('iterateBtn', 'Job created!');
 
   } catch (error) {
-    console.error('[YTM Generator] Iterate failed:', error);
+    console.error('[YTM Generator] Random iterate failed:', error);
     alert('Failed to iterate: ' + error.message);
+    hideLightboxLoading();
+  }
+}
+
+/**
+ * Prompt-based Iterate - Creates variation based on prompt input
+ */
+async function promptIterateAsset() {
+  if (!state.currentAsset) return;
+
+  const promptInput = document.getElementById('promptInput');
+  const prompt = promptInput.value.trim();
+
+  if (!prompt) {
+    alert('Please enter a prompt to guide the iteration');
+    return;
+  }
+
+  try {
+    console.log('[YTM Generator] Prompt iterating asset:', state.currentAsset.id);
+    console.log('[YTM Generator] Iteration prompt:', prompt);
+
+    showTemporaryMessage('promptIterateBtn', 'Iterating with prompt...');
+    showLightboxLoading('Creating prompt-guided variation...');
+
+    // Call regenerate with the new prompt
+    const regenerateFn = functions.httpsCallable('regenerateJob');
+    const result = await regenerateFn({
+      jobId: state.currentAsset.id,
+      newPrompt: prompt  // Use the prompt from input field
+    });
+
+    const newJobId = result.data.newJobId;
+    console.log(`[YTM Generator] Prompt iterate job created: ${newJobId}`);
+
+    // Track this job
+    state.activeJobs.set(newJobId, {
+      type: 'prompt-iterate',
+      originalId: state.currentAsset.id,
+      prompt: prompt
+    });
+
+    showTemporaryMessage('promptIterateBtn', 'Job created!');
+
+  } catch (error) {
+    console.error('[YTM Generator] Prompt iterate failed:', error);
+    alert('Failed to iterate with prompt: ' + error.message);
     hideLightboxLoading();
   }
 }
@@ -492,9 +604,19 @@ async function animateAsset() {
     showLightboxLoading('Converting to video...');
 
     const animateFn = functions.httpsCallable('imageToVideoJob');
-    const result = await animateFn({
+
+    // Prepare parameters - include imageUrl for uploaded images
+    const params = {
       jobId: state.currentAsset.id
-    });
+    };
+
+    // If this is an uploaded image, also pass the imageUrl
+    if (state.currentAsset.id.startsWith('upload_')) {
+      params.imageUrl = state.currentAsset.result?.url;
+      console.log('[YTM Generator] Including imageUrl for uploaded image:', params.imageUrl);
+    }
+
+    const result = await animateFn(params);
 
     const newJobId = result.data.newJobId;
     console.log(`[YTM Generator] Animate job created: ${newJobId}`);
@@ -515,31 +637,42 @@ async function animateAsset() {
 }
 
 /**
- * Save current lightbox asset to gallery
+ * Show country selection modal for saving to gallery
  */
-async function saveToGallery() {
+function showCountryModal() {
+  if (!state.currentAsset) return;
+  document.getElementById('countryModal').style.display = 'flex';
+}
+
+/**
+ * Save current lightbox asset to gallery with country selection
+ */
+async function saveToCountry(country) {
   if (!state.currentAsset) return;
 
-  const btn = document.getElementById('saveToGallery');
-  const originalText = btn.querySelector('.btn-text').textContent;
-
   try {
-    console.log('[YTM Generator] Saving to gallery:', state.currentAsset.id);
+    console.log('[YTM Generator] Saving to gallery:', state.currentAsset.id, 'Country:', country);
 
+    // Close modal
+    closeModals();
+
+    const btn = document.getElementById('saveToGallery');
+    const originalText = btn.querySelector('.btn-text').textContent;
     btn.querySelector('.btn-text').textContent = 'Saving...';
     btn.disabled = true;
 
-    // Save to gallery collection
+    // Save to gallery collection with country field
     await db.collection('gallery').add({
       assetId: state.currentAsset.id,
       url: state.currentAsset.result.url,
       prompt: state.currentAsset.prompt || '',
       format: state.currentAsset.format || state.currentAspectRatio,
       type: state.currentAsset.type,
+      country: country,  // Add country field
       savedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log('[YTM Generator] Saved to gallery');
+    console.log('[YTM Generator] Saved to gallery in', country);
     btn.querySelector('.btn-text').textContent = 'Saved!';
 
     setTimeout(() => {
@@ -550,6 +683,8 @@ async function saveToGallery() {
   } catch (error) {
     console.error('[YTM Generator] Save to gallery failed:', error);
     alert('Failed to save: ' + error.message);
+    const btn = document.getElementById('saveToGallery');
+    const originalText = btn.querySelector('.btn-text').textContent;
     btn.querySelector('.btn-text').textContent = originalText;
     btn.disabled = false;
   }
@@ -575,20 +710,16 @@ async function downloadAsset() {
     const extension = state.currentAsset.type === 'image' ? '.jpg' : '.mp4';
     const filename = `ytm-creative-${state.currentAsset.type}-${state.currentAsset.id.substring(0, 8)}${extension}`;
 
-    // Fetch the file and create a blob URL for proper download
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
+    // Use Cloud Function proxy for proper download with CORS headers
+    const downloadUrl = `https://us-central1-v3-creative-engine.cloudfunctions.net/downloadAsset?url=${encodeURIComponent(url)}`;
 
+    // Create download link
     const link = document.createElement('a');
-    link.href = blobUrl;
+    link.href = downloadUrl;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    // Clean up blob URL
-    URL.revokeObjectURL(blobUrl);
 
     btn.querySelector('.btn-text').textContent = 'Downloaded!';
 
@@ -603,6 +734,123 @@ async function downloadAsset() {
     btn.querySelector('.btn-text').textContent = originalText;
     btn.disabled = false;
   }
+}
+
+// ============================================================================
+// COUNTRY FOLDER MANAGEMENT
+// ============================================================================
+
+/**
+ * Switch active country tab and filter gallery
+ */
+function switchCountry(country) {
+  console.log('[YTM Generator] Switching to country:', country);
+
+  // Update state
+  state.currentCountry = country;
+
+  // Update active tab
+  document.querySelectorAll('.country-tab').forEach(tab => {
+    if (tab.dataset.country === country) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+
+  // Re-render gallery with filtered results
+  renderGallery();
+}
+
+// ============================================================================
+// UPLOAD FUNCTIONALITY
+// ============================================================================
+
+/**
+ * Show upload modal
+ */
+function showUploadModal() {
+  document.getElementById('uploadModal').style.display = 'flex';
+}
+
+/**
+ * Upload image to Firebase Storage and save to gallery
+ */
+async function uploadToCountry(country) {
+  const fileInput = document.getElementById('uploadFileInput');
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert('Please select an image file first');
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    alert('Please select a valid image file');
+    return;
+  }
+
+  try {
+    console.log('[YTM Generator] Uploading image to country:', country);
+
+    // Close modal
+    closeModals();
+
+    // Show loading toast
+    showImportToast('Uploading image...');
+
+    // Create unique filename
+    const timestamp = Date.now();
+    const fileName = `uploads/${country}/${timestamp}_${file.name}`;
+
+    // Upload to Firebase Storage
+    const storage = firebase.storage();
+    const storageRef = storage.ref();
+    const fileRef = storageRef.child(fileName);
+
+    const uploadTask = await fileRef.put(file);
+    const downloadUrl = await uploadTask.ref.getDownloadURL();
+
+    console.log('[YTM Generator] Image uploaded:', downloadUrl);
+
+    // Create a synthetic job ID for uploaded images
+    const uploadJobId = `upload_${timestamp}`;
+
+    // Save to gallery collection
+    await db.collection('gallery').add({
+      assetId: uploadJobId,
+      url: downloadUrl,
+      prompt: `Uploaded image: ${file.name}`,
+      format: '1:1',  // Default format for uploads
+      type: 'image',
+      country: country,
+      isUploaded: true,  // Flag to identify uploaded images
+      savedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log('[YTM Generator] Upload saved to gallery in', country);
+
+    // Show success toast
+    showImportToast(`Image uploaded to ${country.charAt(0).toUpperCase() + country.slice(1)}`);
+
+    // Clear file input
+    fileInput.value = '';
+
+    // Switch to the country we uploaded to
+    switchCountry(country);
+
+  } catch (error) {
+    console.error('[YTM Generator] Upload failed:', error);
+    alert('Failed to upload image: ' + error.message);
+  }
+}
+
+/**
+ * Close all modals
+ */
+function closeModals() {
+  document.getElementById('countryModal').style.display = 'none';
+  document.getElementById('uploadModal').style.display = 'none';
 }
 
 // ============================================================================
@@ -840,12 +1088,17 @@ function hideLightboxLoading() {
 // ============================================================================
 
 /**
- * Render gallery thumbnails
+ * Render gallery thumbnails (filtered by current country)
  */
 function renderGallery() {
   const galleryGrid = document.getElementById('galleryGrid');
 
-  if (state.savedGallery.length === 0) {
+  // Filter gallery by current country
+  const countryAssets = state.savedGallery.filter(asset =>
+    asset.country === state.currentCountry
+  );
+
+  if (countryAssets.length === 0) {
     // Show empty slots
     galleryGrid.innerHTML = `
       <div class="gallery-item">
@@ -864,8 +1117,8 @@ function renderGallery() {
     return;
   }
 
-  // Render saved assets
-  galleryGrid.innerHTML = state.savedGallery.map((asset, index) => {
+  // Render saved assets for current country
+  galleryGrid.innerHTML = countryAssets.map((asset, index) => {
     const isVideo = asset.type === 'video';
     const mediaTag = isVideo
       ? `<video src="${asset.url}" muted></video>`
@@ -944,6 +1197,7 @@ window.loadGalleryAsset = function(galleryId) {
 function enableActionButtons(assetType) {
   document.getElementById('upscaleBtn').disabled = false;
   document.getElementById('iterateBtn').disabled = false;
+  document.getElementById('promptIterateBtn').disabled = false;
   document.getElementById('saveToGallery').disabled = false;
   document.getElementById('downloadBtn').disabled = false;
 
@@ -960,6 +1214,7 @@ function enableActionButtons(assetType) {
 function disableActionButtons() {
   document.getElementById('upscaleBtn').disabled = true;
   document.getElementById('iterateBtn').disabled = true;
+  document.getElementById('promptIterateBtn').disabled = true;
   document.getElementById('expandBtn').disabled = true;
   document.getElementById('animateBtn').disabled = true;
   document.getElementById('saveToGallery').disabled = true;
@@ -1008,6 +1263,14 @@ function showTemporaryMessage(buttonId, message, duration = 2000) {
 function checkForImportedPrompt() {
   const urlParams = new URLSearchParams(window.location.search);
   const importedPrompt = urlParams.get('prompt');
+  const importedMarket = urlParams.get('market');
+
+  // Auto-switch to imported market if provided
+  if (importedMarket) {
+    console.log(`[YTM Generator] Auto-switching to market: ${importedMarket}`);
+    switchCountry(importedMarket);
+    showImportToast(`Switched to ${importedMarket.toUpperCase()} market`);
+  }
 
   if (importedPrompt) {
     console.log('[YTM Generator] Imported prompt from MCP Bridge');
@@ -1023,12 +1286,14 @@ function checkForImportedPrompt() {
       // Show success toast
       showImportToast('Prompt imported from YTM Agent Collective');
 
-      // Clean the URL (remove the prompt parameter)
-      const cleanUrl = window.location.origin + window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-
       console.log(`[YTM Generator] Prompt imported: "${decodedPrompt.substring(0, 50)}..."`);
     }
+  }
+
+  // Clean the URL (remove the parameters)
+  if (importedPrompt || importedMarket) {
+    const cleanUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
   }
 }
 
