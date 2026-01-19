@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YTM Creative Generator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,6 +18,18 @@
           <span class="logo-icon">▶</span>
           <span class="logo-text">YTM Creative Generator</span>
         </div>
+
+        <!-- Live Status Indicator -->
+        <div id="statusIndicator" class="status-indicator hidden">
+          <div class="status-icon">
+            <div class="spinner-small"></div>
+          </div>
+          <div class="status-text">
+            <div class="status-message" id="statusMessage">Processing...</div>
+            <div class="status-time" id="statusTime">Estimated: calculating...</div>
+          </div>
+        </div>
+
         <div class="header-actions">
           <a href="agent-collective.html" class="open-agents-btn" target="_blank">
             <span class="btn-icon">▶</span>
@@ -37,13 +50,13 @@
           <!-- Generation Buttons -->
           <div class="button-section">
             <h3 class="section-label">Generation</h3>
-            <button id="generateOne" class="control-btn">
-              <span class="btn-icon">⚙️</span>
-              <span class="btn-text">Generate 1</span>
+            <button id="generateImage" class="control-btn">
+              <span class="btn-icon">🖼️</span>
+              <span class="btn-text">Generate Image</span>
             </button>
-            <button id="generateAll" class="control-btn">
-              <span class="btn-icon">🎨</span>
-              <span class="btn-text">Generate All</span>
+            <button id="generateVideo" class="control-btn">
+              <span class="btn-icon">🎬</span>
+              <span class="btn-text">Generate Video</span>
             </button>
           </div>
 
@@ -67,7 +80,11 @@
             </button>
             <button id="iterateBtn" class="control-btn" disabled>
               <span class="btn-icon">🔄</span>
-              <span class="btn-text">Iterate</span>
+              <span class="btn-text">Random Iterate</span>
+            </button>
+            <button id="promptIterateBtn" class="control-btn" disabled>
+              <span class="btn-icon">✏️</span>
+              <span class="btn-text">Prompt Iterate</span>
             </button>
             <button id="expandBtn" class="control-btn" disabled>
               <span class="btn-icon">↗️</span>
@@ -113,7 +130,20 @@
         <div class="gallery-container">
           <div class="gallery-header">
             <span class="gallery-title">Gallery View</span>
+            <button id="uploadBtn" class="upload-btn" title="Upload Image">
+              <span class="btn-icon">📤</span>
+              <span class="btn-text">Upload</span>
+            </button>
           </div>
+
+          <!-- Country Tabs -->
+          <div class="country-tabs">
+            <button class="country-tab active" data-country="korea">🇰🇷 KR</button>
+            <button class="country-tab" data-country="japan">🇯🇵 JP</button>
+            <button class="country-tab" data-country="indonesia">🇮🇩 ID</button>
+            <button class="country-tab" data-country="india">🇮🇳 IN</button>
+          </div>
+
           <div id="galleryGrid" class="gallery-grid">
             <!-- Gallery thumbnails will be dynamically inserted here -->
           </div>
@@ -141,10 +171,42 @@
 
   </div>
 
+  <!-- Country Selection Modal (for Save to Gallery) -->
+  <div id="countryModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3>Select Country Folder</h3>
+      <p>Choose which country folder to save this creative to:</p>
+      <div class="country-buttons">
+        <button class="country-select-btn" data-country="korea">🇰🇷 KR</button>
+        <button class="country-select-btn" data-country="japan">🇯🇵 JP</button>
+        <button class="country-select-btn" data-country="indonesia">🇮🇩 ID</button>
+        <button class="country-select-btn" data-country="india">🇮🇳 IN</button>
+      </div>
+      <button class="modal-cancel-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Upload Modal -->
+  <div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3>Upload Image</h3>
+      <p>Select an image file and choose which country folder to add it to:</p>
+      <input type="file" id="uploadFileInput" accept="image/*" style="margin: 15px 0;">
+      <div class="country-buttons">
+        <button class="country-upload-btn" data-country="korea">🇰🇷 KR</button>
+        <button class="country-upload-btn" data-country="japan">🇯🇵 JP</button>
+        <button class="country-upload-btn" data-country="indonesia">🇮🇩 ID</button>
+        <button class="country-upload-btn" data-country="india">🇮🇳 IN</button>
+      </div>
+      <button class="modal-cancel-btn">Cancel</button>
+    </div>
+  </div>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
   <!-- App Logic -->
   <script src="script.js"></script>
