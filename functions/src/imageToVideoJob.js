@@ -7,25 +7,75 @@ const admin = require('firebase-admin');
 
 async function imageToVideoJob(data, context) {
   try {
-    const { jobId } = data;
+    const { jobId, imageUrl } = data;
 
-    if (!jobId) {
-      throw new Error('jobId is required');
+    if (!jobId && !imageUrl) {
+      throw new Error('Either jobId or imageUrl is required');
     }
 
     const db = admin.firestore();
 
-    // Get original job
-    const originalJobDoc = await db.collection('jobs').doc(jobId).get();
+    let sourceImageUrl;
+    let originalFormat = '16:9';
+    let originalPrompt = '';
+    let country = 'korea';  // Default country
 
-    if (!originalJobDoc.exists) {
-      throw new Error('Job not found');
+    // Check if this is an uploaded image (jobId starts with 'upload_')
+    if (jobId && jobId.startsWith('upload_')) {
+      console.log(`[ImageToVideo] Processing uploaded image: ${jobId}`);
+
+      // For uploaded images, we need to get the URL from the gallery or use the provided imageUrl
+      if (imageUrl) {
+        sourceImageUrl = imageUrl;
+      } else {
+        // Try to find the image in gallery collection
+        const gallerySnapshot = await db.collection('gallery')
+          .where('assetId', '==', jobId)
+          .limit(1)
+          .get();
+
+        if (gallerySnapshot.empty) {
+          throw new Error('Uploaded image not found in gallery');
+        }
+
+        const galleryDoc = gallerySnapshot.docs[0];
+        const galleryData = galleryDoc.data();
+        sourceImageUrl = galleryData.url;
+        originalFormat = galleryData.format || '1:1';
+        originalPrompt = galleryData.prompt || 'Uploaded image';
+        country = galleryData.country || 'korea';  // Get country from gallery
+      }
+
+    } else {
+      // This is a generated image with a job document
+      const originalJobDoc = await db.collection('jobs').doc(jobId).get();
+
+      if (!originalJobDoc.exists) {
+        throw new Error('Job not found');
+      }
+
+      const originalJob = originalJobDoc.data();
+
+      if (originalJob.type !== 'image') {
+        throw new Error('Can only convert images to video');
+      }
+
+      sourceImageUrl = originalJob.result?.url;
+      originalFormat = originalJob.format || '16:9';
+      originalPrompt = originalJob.prompt || '';
+      country = originalJob.country || 'korea';  // Get country from original job
     }
 
-    const originalJob = originalJobDoc.data();
+    if (!sourceImageUrl) {
+      throw new Error('Source image URL not found');
+    }
 
-    if (originalJob.type !== 'image') {
-      throw new Error('Can only convert images to video');
+    // Convert unsupported aspect ratios for video generation
+    // Gemini API Veo doesn't support 1:1, convert to 9:16 (portrait) as fallback
+    let videoFormat = originalFormat;
+    if (originalFormat === '1:1' || originalFormat === '4:3' || originalFormat === '3:4') {
+      videoFormat = '9:16'; // Default to portrait for square/unusual ratios
+      console.log(`[ImageToVideo] Converting unsupported aspect ratio ${originalFormat} to ${videoFormat} for video generation`);
     }
 
     // Create new video job with image reference
@@ -36,10 +86,12 @@ async function imageToVideoJob(data, context) {
       status: 'pending',
       type: 'video',
       prompt: videoPrompt,
-      format: originalJob.format || '16:9',
-      sourceImageUrl: originalJob.result?.url, // Pass the image URL
+      format: videoFormat,
+      country: country,  // Preserve country from original image
+      sourceImageUrl: sourceImageUrl, // Pass the image URL
       sourceImageJobId: jobId, // Reference to original image job
-      originalImagePrompt: originalJob.prompt, // Store original prompt for reference
+      originalImagePrompt: originalPrompt, // Store original prompt for reference
+      originalImageFormat: originalFormat, // Store original format for reference
       context: {
         source: 'image-to-video',
         originalJobId: jobId,

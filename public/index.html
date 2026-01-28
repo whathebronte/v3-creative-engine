@@ -39,6 +39,16 @@
       </div>
     </header>
 
+    <!-- Country Indicator Banner -->
+    <div id="countryBanner" class="country-banner korea" title="Click to change country">
+      <div class="country-banner-content">
+        <span class="country-label">Set to:</span>
+        <span class="country-name" id="countryName">KOREA</span>
+        <span class="country-flag" id="countryFlag">🇰🇷</span>
+        <span class="country-change-hint">(click to change)</span>
+      </div>
+    </div>
+
     <!-- Main Layout (3 columns) -->
     <div class="main-layout">
 
@@ -136,18 +146,14 @@
             </button>
           </div>
 
-          <!-- Country Tabs -->
-          <div class="country-tabs">
-            <button class="country-tab active" data-country="korea">🇰🇷 KR</button>
-            <button class="country-tab" data-country="japan">🇯🇵 JP</button>
-            <button class="country-tab" data-country="indonesia">🇮🇩 ID</button>
-            <button class="country-tab" data-country="india">🇮🇳 IN</button>
-          </div>
-
           <div id="galleryGrid" class="gallery-grid">
             <!-- Gallery thumbnails will be dynamically inserted here -->
           </div>
           <div class="gallery-footer">
+            <button id="sendToTemplateStamperBtn" class="send-to-stamper-btn" style="display: none;" onclick="sendToTemplateStamper()">
+              <span class="btn-icon">🚀</span>
+              <span class="btn-text">Send <span class="selection-count">0</span> to Template Stamper</span>
+            </button>
             <button class="help-btn" title="Help" onclick="showHelpModal()">?</button>
           </div>
         </div>
@@ -199,6 +205,49 @@
         <button class="country-upload-btn" data-country="india">🇮🇳 IN</button>
       </div>
       <button class="modal-cancel-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Initial Country Selection Modal (appears on first load) -->
+  <div id="initialCountryModal" class="modal initial-modal" style="display: none;">
+    <div class="modal-content initial-country-content">
+      <h2 style="margin-bottom: 10px;">Welcome to YTM Creative Generator</h2>
+      <p style="margin-bottom: 25px; color: #b0b0b0;">Please select your country/market to continue:</p>
+      <div class="country-selection-grid">
+        <button class="country-selection-btn" data-country="korea">
+          <span class="country-flag-large">🇰🇷</span>
+          <span class="country-name">Korea</span>
+        </button>
+        <button class="country-selection-btn" data-country="japan">
+          <span class="country-flag-large">🇯🇵</span>
+          <span class="country-name">Japan</span>
+        </button>
+        <button class="country-selection-btn" data-country="indonesia">
+          <span class="country-flag-large">🇮🇩</span>
+          <span class="country-name">Indonesia</span>
+        </button>
+        <button class="country-selection-btn" data-country="india">
+          <span class="country-flag-large">🇮🇳</span>
+          <span class="country-name">India</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Stamper Transfer Modal -->
+  <div id="templateStamperModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3>Send to Template Stamper</h3>
+      <p>You are about to send <strong id="templateStamperCount">0</strong> asset(s) to Template Stamper for final branding:</p>
+      <div id="templateStamperAssetsList" class="transfer-assets-list">
+        <!-- Assets will be dynamically inserted here -->
+      </div>
+      <div class="modal-actions">
+        <button id="templateStamperConfirmBtn" class="modal-confirm-btn" onclick="confirmTemplateStamperTransfer()">
+          Confirm Transfer
+        </button>
+        <button class="modal-cancel-btn" onclick="closeModals()">Cancel</button>
+      </div>
     </div>
   </div>
 

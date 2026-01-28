@@ -44,6 +44,18 @@ service cloud.firestore {
       allow create: if true;
     }
 
+    // Template Stamper Transfers - Asset transfers from Creative Generator to Template Stamper
+    match /template_stamper_transfers/{transferId} {
+      // Allow read for everyone (Template Stamper needs to read transfers)
+      allow read: if true;
+      // Allow create from Creative Generator
+      allow create: if true;
+      // Allow update for Template Stamper to mark as processed
+      allow update: if true;
+      // Allow delete for cleanup
+      allow delete: if true;
+    }
+
     // Default: deny all other access
     match /{document=**} {
       allow read, write: if false;

@@ -37,6 +37,7 @@ async function expandImageJob(data, context) {
       type: 'image',
       prompt: expandedPrompt,
       format: originalJob.format,
+      country: originalJob.country || 'korea',  // Preserve country from original job
       context: {
         source: 'expand',
         originalJobId: jobId,

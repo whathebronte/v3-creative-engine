@@ -32,8 +32,13 @@ let state = {
   currentPrompt: '',            // Current prompt text
   activeJobs: new Map(),        // Track active generation jobs
   allJobs: [],                  // All jobs for debugging
-  currentCountry: 'korea'       // Currently selected country folder
+  currentCountry: 'korea',      // Currently selected country folder
+  selectedAssets: new Set()     // Selected gallery assets for Template Stamper transfer
 };
+
+// Store snapshot listeners so we can unsubscribe when changing countries
+let jobsListener = null;
+let galleryListener = null;
 
 // ============================================================================
 // INITIALIZATION
@@ -42,13 +47,84 @@ let state = {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[YTM Generator] Initializing...');
 
+  // Check if country is already selected (stored in localStorage)
+  const storedCountry = localStorage.getItem('ytm_selected_country');
+  const urlParams = new URLSearchParams(window.location.search);
+  const importedMarket = urlParams.get('market');
+
+  if (importedMarket) {
+    // If coming from Agent Collective with a market parameter, use it
+    console.log(`[YTM Generator] Imported market from URL: ${importedMarket}`);
+    state.currentCountry = importedMarket;
+    localStorage.setItem('ytm_selected_country', importedMarket);
+    initializeApp();
+  } else if (storedCountry) {
+    // Use stored country from previous session
+    console.log(`[YTM Generator] Using stored country: ${storedCountry}`);
+    state.currentCountry = storedCountry;
+    initializeApp();
+  } else {
+    // First time user - show country selection modal
+    console.log('[YTM Generator] First time user - showing country selection');
+    showInitialCountryModal();
+  }
+
+  console.log('[YTM Generator] Ready');
+});
+
+// ============================================================================
+// INITIAL APP SETUP
+// ============================================================================
+
+function initializeApp() {
   setupEventListeners();
   setupRealtimeListeners();
   initializeUI();
   checkForImportedPrompt();
+  updateCountryBanner(state.currentCountry);
 
-  console.log('[YTM Generator] Ready');
-});
+  // Add click handler to country banner for changing country
+  const countryBanner = document.getElementById('countryBanner');
+  if (countryBanner) {
+    countryBanner.addEventListener('click', () => {
+      const currentCountry = state.currentCountry.toUpperCase();
+      const confirmed = confirm(
+        `You are currently locked to ${currentCountry}.\n\n` +
+        `Do you want to change your country selection?\n\n` +
+        `Note: This will reload all data for the new country.`
+      );
+
+      if (confirmed) {
+        // Clear localStorage and show country selection modal
+        localStorage.removeItem('ytm_selected_country');
+        location.reload();
+      }
+    });
+  }
+}
+
+function showInitialCountryModal() {
+  const modal = document.getElementById('initialCountryModal');
+  modal.style.display = 'flex';
+
+  // Add click handlers for country selection buttons
+  document.querySelectorAll('.country-selection-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const selectedCountry = btn.dataset.country;
+      console.log(`[YTM Generator] Country selected: ${selectedCountry}`);
+
+      // Save to localStorage
+      localStorage.setItem('ytm_selected_country', selectedCountry);
+      state.currentCountry = selectedCountry;
+
+      // Hide modal
+      modal.style.display = 'none';
+
+      // Initialize the app
+      initializeApp();
+    });
+  });
+}
 
 // ============================================================================
 // EVENT LISTENERS SETUP
@@ -70,18 +146,13 @@ function setupEventListeners() {
   document.getElementById('animateBtn').addEventListener('click', animateAsset);
 
   // Bottom buttons
-  document.getElementById('saveToGallery').addEventListener('click', showCountryModal);
+  document.getElementById('saveToGallery').addEventListener('click', saveToCurrentCountry);
   document.getElementById('downloadBtn').addEventListener('click', downloadAsset);
 
   // Gallery Upload button
-  document.getElementById('uploadBtn').addEventListener('click', showUploadModal);
+  document.getElementById('uploadBtn').addEventListener('click', uploadToCurrentCountry);
 
-  // Country tabs
-  document.querySelectorAll('.country-tab').forEach(tab => {
-    tab.addEventListener('click', () => switchCountry(tab.dataset.country));
-  });
-
-  // Modal buttons
+  // Modal buttons (for save to gallery - no longer needed but keep for backwards compatibility)
   document.querySelectorAll('.country-select-btn').forEach(btn => {
     btn.addEventListener('click', () => saveToCountry(btn.dataset.country));
   });
@@ -143,8 +214,19 @@ function setupPromptResize() {
 // ============================================================================
 
 function setupRealtimeListeners() {
-  // Listen to jobs collection for generation updates
-  db.collection('jobs')
+  // Unsubscribe from existing listeners if any
+  if (jobsListener) {
+    jobsListener();
+  }
+  if (galleryListener) {
+    galleryListener();
+  }
+
+  console.log(`[YTM Generator] Setting up listeners for country: ${state.currentCountry}`);
+
+  // Listen to jobs collection for generation updates (FILTERED BY COUNTRY)
+  jobsListener = db.collection('jobs')
+    .where('country', '==', state.currentCountry)  // FILTER BY COUNTRY
     .orderBy('createdAt', 'desc')
     .limit(100)
     .onSnapshot((snapshot) => {
@@ -153,7 +235,7 @@ function setupRealtimeListeners() {
         ...doc.data()
       }));
 
-      console.log(`[YTM Generator] Jobs updated: ${state.allJobs.length} total`);
+      console.log(`[YTM Generator] Jobs updated for ${state.currentCountry}: ${state.allJobs.length} total`);
 
       // Check for completed jobs we're tracking
       checkActiveJobs();
@@ -164,8 +246,9 @@ function setupRealtimeListeners() {
       console.error('[YTM Generator] Error listening to jobs:', error);
     });
 
-  // Listen to gallery collection for saved assets
-  db.collection('gallery')
+  // Listen to gallery collection for saved assets (FILTERED BY COUNTRY)
+  galleryListener = db.collection('gallery')
+    .where('country', '==', state.currentCountry)  // FILTER BY COUNTRY
     .orderBy('savedAt', 'desc')
     .limit(50)
     .onSnapshot((snapshot) => {
@@ -174,7 +257,7 @@ function setupRealtimeListeners() {
         ...doc.data()
       }));
 
-      console.log(`[YTM Generator] Gallery updated: ${state.savedGallery.length} assets`);
+      console.log(`[YTM Generator] Gallery updated for ${state.currentCountry}: ${state.savedGallery.length} assets`);
       renderGallery();
     }, (error) => {
       console.error('[YTM Generator] Error listening to gallery:', error);
@@ -275,7 +358,8 @@ async function generateImage() {
     const result = await createTestJobFn({
       type: 'image',
       prompt: prompt,
-      format: state.currentAspectRatio
+      format: state.currentAspectRatio,
+      country: state.currentCountry  // Add country field
     });
 
     const jobId = result.data.jobId;
@@ -320,7 +404,8 @@ async function generateVideo() {
     const result = await createTestJobFn({
       type: 'video',
       prompt: prompt,
-      format: state.currentAspectRatio || '9:16'  // Default to 9:16 for videos
+      format: state.currentAspectRatio || '9:16',  // Default to 9:16 for videos
+      country: state.currentCountry  // Add country field
     });
 
     const jobId = result.data.jobId;
@@ -377,7 +462,8 @@ async function generateAll() {
         type: 'image',
         prompt: scene,
         format: state.currentAspectRatio,
-        sceneNumber: index + 1
+        sceneNumber: index + 1,
+        country: state.currentCountry  // Add country field
       });
     });
 
@@ -647,6 +733,12 @@ function showCountryModal() {
 /**
  * Save current lightbox asset to gallery with country selection
  */
+// Save to current country directly (no modal)
+async function saveToCurrentCountry() {
+  if (!state.currentAsset) return;
+  await saveToCountry(state.currentCountry);
+}
+
 async function saveToCountry(country) {
   if (!state.currentAsset) return;
 
@@ -741,13 +833,16 @@ async function downloadAsset() {
 // ============================================================================
 
 /**
- * Switch active country tab and filter gallery
+ * Switch active country tab and re-establish listeners
  */
 function switchCountry(country) {
   console.log('[YTM Generator] Switching to country:', country);
 
   // Update state
   state.currentCountry = country;
+
+  // Clear selected assets when switching countries
+  state.selectedAssets.clear();
 
   // Update active tab
   document.querySelectorAll('.country-tab').forEach(tab => {
@@ -758,8 +853,43 @@ function switchCountry(country) {
     }
   });
 
-  // Re-render gallery with filtered results
-  renderGallery();
+  // Update country banner
+  updateCountryBanner(country);
+
+  // Re-establish Firestore listeners with new country filter
+  setupRealtimeListeners();
+
+  // Clear lightbox to avoid showing wrong country's content
+  clearLightbox();
+}
+
+/**
+ * Update country banner to show current market
+ */
+function updateCountryBanner(country) {
+  const banner = document.getElementById('countryBanner');
+  const countryName = document.getElementById('countryName');
+  const countryFlag = document.getElementById('countryFlag');
+
+  const countryData = {
+    korea: { name: 'KOREA', flag: '🇰🇷' },
+    japan: { name: 'JAPAN', flag: '🇯🇵' },
+    india: { name: 'INDIA', flag: '🇮🇳' },
+    indonesia: { name: 'INDONESIA', flag: '🇮🇩' }
+  };
+
+  // Remove all country classes
+  banner.classList.remove('korea', 'japan', 'india', 'indonesia');
+
+  // Add new country class
+  banner.classList.add(country);
+
+  // Update text and flag
+  const data = countryData[country];
+  if (data) {
+    countryName.textContent = data.name;
+    countryFlag.textContent = data.flag;
+  }
 }
 
 // ============================================================================
@@ -776,10 +906,36 @@ function showUploadModal() {
 /**
  * Upload image to Firebase Storage and save to gallery
  */
+// Upload to current country directly (show file picker)
+async function uploadToCurrentCountry() {
+  // Create a temporary file input
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+
+  fileInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      await uploadFileToCountry(file, state.currentCountry);
+    }
+  };
+
+  fileInput.click();
+}
+
 async function uploadToCountry(country) {
   const fileInput = document.getElementById('uploadFileInput');
   const file = fileInput.files[0];
 
+  if (!file) {
+    alert('Please select an image file first');
+    return;
+  }
+
+  await uploadFileToCountry(file, country);
+}
+
+async function uploadFileToCountry(file, country) {
   if (!file) {
     alert('Please select an image file first');
     return;
@@ -792,9 +948,6 @@ async function uploadToCountry(country) {
 
   try {
     console.log('[YTM Generator] Uploading image to country:', country);
-
-    // Close modal
-    closeModals();
 
     // Show loading toast
     showImportToast('Uploading image...');
@@ -1088,15 +1241,13 @@ function hideLightboxLoading() {
 // ============================================================================
 
 /**
- * Render gallery thumbnails (filtered by current country)
+ * Render gallery thumbnails (already filtered by Firestore query)
  */
 function renderGallery() {
   const galleryGrid = document.getElementById('galleryGrid');
 
-  // Filter gallery by current country
-  const countryAssets = state.savedGallery.filter(asset =>
-    asset.country === state.currentCountry
-  );
+  // No need for client-side filtering - Firestore query already filters by country
+  const countryAssets = state.savedGallery;
 
   if (countryAssets.length === 0) {
     // Show empty slots
@@ -1114,6 +1265,7 @@ function renderGallery() {
         <span class="gallery-item-empty">Asset 4</span>
       </div>
     `;
+    updateTemplateStamperButton();
     return;
   }
 
@@ -1124,13 +1276,162 @@ function renderGallery() {
       ? `<video src="${asset.url}" muted></video>`
       : `<img src="${asset.url}" alt="Asset ${index + 1}" />`;
 
+    const isSelected = state.selectedAssets.has(asset.id);
+
     return `
-      <div class="gallery-item" onclick="loadGalleryAsset('${asset.id}')">
+      <div class="gallery-item ${isSelected ? 'selected' : ''}" onclick="loadGalleryAsset('${asset.id}')">
+        <input
+          type="checkbox"
+          class="gallery-checkbox"
+          ${isSelected ? 'checked' : ''}
+          onclick="event.stopPropagation(); toggleAssetSelection('${asset.id}')"
+        />
         ${mediaTag}
         <button class="gallery-delete-btn" onclick="event.stopPropagation(); deleteGalleryAsset('${asset.id}')" title="Delete from gallery">×</button>
       </div>
     `;
   }).join('');
+
+  updateTemplateStamperButton();
+}
+
+/**
+ * Toggle asset selection for Template Stamper transfer
+ */
+window.toggleAssetSelection = function(galleryId) {
+  if (state.selectedAssets.has(galleryId)) {
+    state.selectedAssets.delete(galleryId);
+  } else {
+    state.selectedAssets.add(galleryId);
+  }
+  renderGallery();
+}
+
+/**
+ * Update Template Stamper button visibility and count
+ */
+function updateTemplateStamperButton() {
+  const btn = document.getElementById('sendToTemplateStamperBtn');
+  if (!btn) return;
+
+  const count = state.selectedAssets.size;
+
+  if (count === 0) {
+    btn.style.display = 'none';
+  } else {
+    btn.style.display = 'flex';
+    btn.querySelector('.selection-count').textContent = count;
+  }
+}
+
+/**
+ * Send selected assets to Template Stamper
+ */
+async function sendToTemplateStamper() {
+  if (state.selectedAssets.size === 0) {
+    alert('Please select at least one asset to send to Template Stamper');
+    return;
+  }
+
+  // Get the selected assets with full data
+  const selectedAssetData = state.savedGallery.filter(asset =>
+    state.selectedAssets.has(asset.id)
+  );
+
+  // Show confirmation modal
+  showTemplateStamperModal(selectedAssetData);
+}
+
+/**
+ * Show confirmation modal before sending to Template Stamper
+ */
+function showTemplateStamperModal(assets) {
+  const modal = document.getElementById('templateStamperModal');
+  const assetsList = document.getElementById('templateStamperAssetsList');
+  const countSpan = document.getElementById('templateStamperCount');
+
+  countSpan.textContent = assets.length;
+
+  // Render list of assets
+  assetsList.innerHTML = assets.map((asset, index) => {
+    const typeIcon = asset.type === 'video' ? '🎬' : '🖼️';
+    const formatLabel = asset.type === 'video' ? 'MP4' : 'JPEG';
+    return `
+      <div class="transfer-asset-item">
+        <span class="asset-icon">${typeIcon}</span>
+        <span class="asset-info">${formatLabel} - ${asset.format || '9:16'}</span>
+        <span class="asset-prompt">${(asset.prompt || 'Uploaded asset').substring(0, 40)}...</span>
+      </div>
+    `;
+  }).join('');
+
+  modal.style.display = 'flex';
+}
+
+/**
+ * Confirm and execute transfer to Template Stamper
+ */
+async function confirmTemplateStamperTransfer() {
+  const btn = document.getElementById('templateStamperConfirmBtn');
+  const originalText = btn.textContent;
+
+  try {
+    btn.textContent = 'Transferring...';
+    btn.disabled = true;
+
+    // Get the selected assets with full data
+    const selectedAssetData = state.savedGallery.filter(asset =>
+      state.selectedAssets.has(asset.id)
+    );
+
+    // Prepare asset data for transfer
+    const transferAssets = selectedAssetData.map(asset => ({
+      url: asset.url,
+      type: asset.type, // 'image' or 'video'
+      format: asset.type === 'video' ? 'mp4' : 'jpeg',
+      aspectRatio: asset.format || '9:16',
+      prompt: asset.prompt || 'Uploaded asset',
+      assetId: asset.assetId,
+      savedAt: asset.savedAt
+    }));
+
+    // Create transfer document in Firestore
+    const transferDoc = await db.collection('template_stamper_transfers').add({
+      country: state.currentCountry,
+      assets: transferAssets,
+      assetCount: transferAssets.length,
+      status: 'pending',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      templateStamperUrl: null, // Will be populated when Template Stamper is built
+      processedAt: null
+    });
+
+    console.log('[YTM Generator] Transfer created:', transferDoc.id);
+
+    // Show success
+    btn.textContent = 'Transferred!';
+
+    setTimeout(() => {
+      closeModals();
+
+      // Clear selection
+      state.selectedAssets.clear();
+      renderGallery();
+
+      // Show success toast
+      showImportToast(`${transferAssets.length} asset(s) sent to Template Stamper queue`);
+
+      // Reset button
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }, 1500);
+
+  } catch (error) {
+    console.error('[YTM Generator] Transfer failed:', error);
+    alert('Failed to transfer assets: ' + error.message);
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
 }
 
 /**

@@ -8,7 +8,7 @@ const admin = require('firebase-admin');
 
 async function createTestJob(data, context) {
   try {
-    const { type = 'image', prompt, format, sceneNumber } = data;
+    const { type = 'image', prompt, format, sceneNumber, country } = data;
 
     const db = admin.firestore();
     const jobRef = await db.collection('jobs').add({
@@ -17,6 +17,7 @@ async function createTestJob(data, context) {
       prompt: prompt || `Test ${type} generation`,
       format: format || (type === 'image' ? '1:1' : '16:9'),
       sceneNumber: sceneNumber || null,
+      country: country || 'korea',  // Default to korea if not specified
       context: { source: 'ytm-generator' },
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()

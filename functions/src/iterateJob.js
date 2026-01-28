@@ -31,6 +31,7 @@ async function iterateJob(data, context) {
       type: originalJob.type,
       prompt: originalJob.prompt,
       format: originalJob.format,
+      country: originalJob.country || 'korea',  // Preserve country from original job
       context: {
         source: 'iterate',
         originalJobId: jobId,

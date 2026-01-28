@@ -23,6 +23,7 @@ const { iterateJob } = require('./iterateJob');
 const { importPrompt } = require('./importPrompt');
 const { callGeminiAgent } = require('./callGeminiAgent');
 const { pollVideoOperations } = require('./videoPoller');
+const { downloadAsset } = require('./downloadAsset');
 
 // Job processor (Firestore trigger)
 exports.processJob = functions.firestore
@@ -57,5 +58,8 @@ exports.callGeminiAgent = functions.https.onCall(callGeminiAgent);
 exports.pollVideoOperations = functions.pubsub
   .topic('video-operations-poll')
   .onPublish(pollVideoOperations);
+
+// Download Asset - Proxy for downloading files with proper CORS headers (HTTP endpoint)
+exports.downloadAsset = functions.https.onRequest(downloadAsset);
 
 console.log('[V3 Functions] Cloud Functions initialized');
