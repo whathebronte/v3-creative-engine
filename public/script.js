@@ -1038,6 +1038,14 @@ function checkActiveJobs() {
 
       state.activeJobs.delete(jobId);
       hideLightboxLoading();
+    } else if (job.status === 'cancelled') {
+      console.log(`[YTM Generator] Job cancelled: ${jobId}`);
+
+      // Remove from tracking
+      state.activeJobs.delete(jobId);
+
+      // Hide loading state
+      hideLightboxLoading();
     }
   });
 }
@@ -1145,6 +1153,50 @@ function formatRemainingTime(seconds) {
 
   if (remainingSeconds === 0) return `${minutes}m`;
   return `${minutes}m ${remainingSeconds}s`;
+}
+
+/**
+ * Cancel the current active job
+ */
+async function cancelCurrentJob() {
+  try {
+    // Find active jobs (pending, processing, or generating)
+    const activeJobs = state.allJobs.filter(job =>
+      job.status === 'pending' ||
+      job.status === 'processing' ||
+      job.status === 'generating'
+    );
+
+    if (activeJobs.length === 0) {
+      console.log('[YTM Generator] No active jobs to cancel');
+      return;
+    }
+
+    // Get the most recent active job
+    const currentJob = activeJobs[0];
+    console.log(`[YTM Generator] Cancelling job: ${currentJob.id}`);
+
+    // Update job status to 'cancelled' in Firestore
+    await db.collection('jobs').doc(currentJob.id).update({
+      status: 'cancelled',
+      cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Remove from active jobs tracking
+    state.activeJobs.delete(currentJob.id);
+
+    // Hide loading indicators
+    hideLightboxLoading();
+
+    // Show success message
+    showImportToast('Job cancelled successfully');
+
+    console.log('[YTM Generator] Job cancelled successfully');
+  } catch (error) {
+    console.error('[YTM Generator] Failed to cancel job:', error);
+    showImportToast('Failed to cancel job');
+  }
 }
 
 // ============================================================================
