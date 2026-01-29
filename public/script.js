@@ -928,7 +928,7 @@ async function uploadToCountry(country) {
   const file = fileInput.files[0];
 
   if (!file) {
-    alert('Please select an image file first');
+    alert('Please select an image or video file first');
     return;
   }
 
@@ -937,20 +937,27 @@ async function uploadToCountry(country) {
 
 async function uploadFileToCountry(file, country) {
   if (!file) {
-    alert('Please select an image file first');
+    alert('Please select an image or video file first');
     return;
   }
 
-  if (!file.type.startsWith('image/')) {
-    alert('Please select a valid image file');
+  // Determine file type
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+
+  if (!isImage && !isVideo) {
+    alert('Please select a valid image or video file');
     return;
   }
+
+  const fileType = isImage ? 'image' : 'video';
+  const fileInput = document.getElementById('uploadFileInput');
 
   try {
-    console.log('[YTM Generator] Uploading image to country:', country);
+    console.log(`[YTM Generator] Uploading ${fileType} to country:`, country);
 
     // Show loading toast
-    showImportToast('Uploading image...');
+    showImportToast(`Uploading ${fileType}...`);
 
     // Create unique filename
     const timestamp = Date.now();
@@ -964,27 +971,45 @@ async function uploadFileToCountry(file, country) {
     const uploadTask = await fileRef.put(file);
     const downloadUrl = await uploadTask.ref.getDownloadURL();
 
-    console.log('[YTM Generator] Image uploaded:', downloadUrl);
+    console.log(`[YTM Generator] ${fileType} uploaded:`, downloadUrl);
 
-    // Create a synthetic job ID for uploaded images
+    // Create a unique job ID for uploaded assets
     const uploadJobId = `upload_${timestamp}`;
+
+    // Determine aspect ratio based on file type
+    const defaultFormat = isVideo ? '9:16' : '1:1';
+
+    // Create job document in jobs collection (so edit features work)
+    await db.collection('jobs').doc(uploadJobId).set({
+      status: 'complete',
+      type: fileType,
+      prompt: `Uploaded ${fileType}: ${file.name}`,
+      format: defaultFormat,
+      country: country,
+      isUploaded: true,  // Flag to identify uploaded assets
+      result: {
+        url: downloadUrl
+      },
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
     // Save to gallery collection
     await db.collection('gallery').add({
       assetId: uploadJobId,
       url: downloadUrl,
-      prompt: `Uploaded image: ${file.name}`,
-      format: '1:1',  // Default format for uploads
-      type: 'image',
+      prompt: `Uploaded ${fileType}: ${file.name}`,
+      format: defaultFormat,
+      type: fileType,
       country: country,
-      isUploaded: true,  // Flag to identify uploaded images
+      isUploaded: true,  // Flag to identify uploaded assets
       savedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log('[YTM Generator] Upload saved to gallery in', country);
+    console.log(`[YTM Generator] Upload saved to jobs and gallery in`, country);
 
     // Show success toast
-    showImportToast(`Image uploaded to ${country.charAt(0).toUpperCase() + country.slice(1)}`);
+    showImportToast(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} uploaded to ${country.charAt(0).toUpperCase() + country.slice(1)}`);
 
     // Clear file input
     fileInput.value = '';
@@ -994,7 +1019,7 @@ async function uploadFileToCountry(file, country) {
 
   } catch (error) {
     console.error('[YTM Generator] Upload failed:', error);
-    alert('Failed to upload image: ' + error.message);
+    alert(`Failed to upload ${fileType}: ` + error.message);
   }
 }
 

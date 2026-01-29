@@ -20,11 +20,26 @@ async function imageToVideoJob(data, context) {
     let originalPrompt = '';
     let country = 'korea';  // Default country
 
-    // Check if this is an uploaded image (jobId starts with 'upload_')
-    if (jobId && jobId.startsWith('upload_')) {
-      console.log(`[ImageToVideo] Processing uploaded image: ${jobId}`);
+    // Try to get job from jobs collection first (works for both generated and uploaded images)
+    const originalJobDoc = await db.collection('jobs').doc(jobId).get();
 
-      // For uploaded images, we need to get the URL from the gallery or use the provided imageUrl
+    if (originalJobDoc.exists) {
+      // Job document found (generated image or uploaded image with job document)
+      const originalJob = originalJobDoc.data();
+
+      if (originalJob.type !== 'image') {
+        throw new Error('Can only convert images to video');
+      }
+
+      sourceImageUrl = originalJob.result?.url;
+      originalFormat = originalJob.format || '16:9';
+      originalPrompt = originalJob.prompt || '';
+      country = originalJob.country || 'korea';  // Get country from original job
+
+    } else if (jobId && jobId.startsWith('upload_')) {
+      // Legacy uploaded image without job document - look in gallery
+      console.log(`[ImageToVideo] Processing legacy uploaded image: ${jobId}`);
+
       if (imageUrl) {
         sourceImageUrl = imageUrl;
       } else {
@@ -47,23 +62,7 @@ async function imageToVideoJob(data, context) {
       }
 
     } else {
-      // This is a generated image with a job document
-      const originalJobDoc = await db.collection('jobs').doc(jobId).get();
-
-      if (!originalJobDoc.exists) {
-        throw new Error('Job not found');
-      }
-
-      const originalJob = originalJobDoc.data();
-
-      if (originalJob.type !== 'image') {
-        throw new Error('Can only convert images to video');
-      }
-
-      sourceImageUrl = originalJob.result?.url;
-      originalFormat = originalJob.format || '16:9';
-      originalPrompt = originalJob.prompt || '';
-      country = originalJob.country || 'korea';  // Get country from original job
+      throw new Error('Job not found');
     }
 
     if (!sourceImageUrl) {
