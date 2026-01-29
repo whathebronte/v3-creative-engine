@@ -150,6 +150,14 @@
             url: 'https://apac-shorts-brain-v2.web.app/',
             icon: <Brain className="w-8 h-8" />,
             color: 'from-pink-500 to-rose-500'
+          },
+          {
+            id: 'campaign-learnings',
+            name: 'Campaign Learnings Agent',
+            description: 'Correlating performance results with analyzed creatives',
+            url: '#',
+            icon: <BarChart3 className="w-8 h-8" />,
+            color: 'from-pink-500 to-rose-500'
           }
         ]
       }
@@ -206,8 +214,8 @@
                   {/* Tools in Track */}
                   <div className="space-y-4">
                     {track.tools.map((tool) => {
-                      const hasComingSoonBanner = tool.id === 'ytm-template' || tool.id === 'shorts-brain';
-                      const isDisabled = tool.id === 'ytm-template';
+                      const hasComingSoonBanner = tool.id === 'ytm-template' || tool.id === 'shorts-brain' || tool.id === 'campaign-learnings';
+                      const isDisabled = tool.id === 'ytm-template' || tool.id === 'campaign-learnings';
                       const CardWrapper = isDisabled ? 'div' : 'a';
                       const cardProps = isDisabled
                         ? { className: "relative bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg transition-all duration-300 block opacity-60" }
