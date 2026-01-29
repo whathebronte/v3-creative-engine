@@ -1313,6 +1313,29 @@ function hideLightboxLoading() {
   }
 }
 
+/**
+ * Clear lightbox and reset to empty state
+ */
+function clearLightbox() {
+  // Clear current asset from state
+  state.currentAsset = null;
+
+  // Show empty state
+  const lightboxEmpty = document.querySelector('.lightbox-empty');
+  const lightboxContent = document.getElementById('lightboxContent');
+
+  if (lightboxEmpty && lightboxContent) {
+    lightboxEmpty.classList.remove('hidden');
+    lightboxContent.classList.add('hidden');
+    lightboxContent.innerHTML = '';
+  }
+
+  // Disable action buttons
+  disableActionButtons();
+
+  console.log('[YTM Generator] Lightbox cleared');
+}
+
 // ============================================================================
 // GALLERY RENDERING
 // ============================================================================
