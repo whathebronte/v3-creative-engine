@@ -1308,19 +1308,23 @@ window.toggleAssetSelection = function(galleryId) {
 }
 
 /**
- * Update Template Stamper button visibility and count
+ * Update Template Stamper button state and text
  */
 function updateTemplateStamperButton() {
   const btn = document.getElementById('sendToTemplateStamperBtn');
-  if (!btn) return;
+  const btnText = document.getElementById('stamperBtnText');
+  if (!btn || !btnText) return;
 
   const count = state.selectedAssets.size;
 
   if (count === 0) {
-    btn.style.display = 'none';
+    // No selection - show instructional text
+    btn.disabled = true;
+    btnText.textContent = 'Select from gallery for template stamping';
   } else {
-    btn.style.display = 'flex';
-    btn.querySelector('.selection-count').textContent = count;
+    // Assets selected - show count
+    btn.disabled = false;
+    btnText.textContent = `Send ${count} to Template Stamper`;
   }
 }
 

@@ -150,9 +150,9 @@
             <!-- Gallery thumbnails will be dynamically inserted here -->
           </div>
           <div class="gallery-footer">
-            <button id="sendToTemplateStamperBtn" class="send-to-stamper-btn" style="display: none;" onclick="sendToTemplateStamper()">
+            <button id="sendToTemplateStamperBtn" class="send-to-stamper-btn" disabled onclick="sendToTemplateStamper()">
               <span class="btn-icon">🚀</span>
-              <span class="btn-text">Send <span class="selection-count">0</span> to Template Stamper</span>
+              <span class="btn-text" id="stamperBtnText">Select from gallery for template stamping</span>
             </button>
             <button class="help-btn" title="Help" onclick="showHelpModal()">?</button>
           </div>
