@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APAC Shorts Automation Hub</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React and ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone for JSX transformation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Lucide React Icons as inline SVG components
+    const Lightbulb = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+        <path d="M9 18h6" />
+        <path d="M10 22h4" />
+      </svg>
+    );
+
+    const Rocket = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+      </svg>
+    );
+
+    const BarChart3 = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M3 3v18h18" />
+        <path d="M18 17V9" />
+        <path d="M13 17V5" />
+        <path d="M8 17v-3" />
+      </svg>
+    );
+
+    const Brain = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+        <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+        <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+        <path d="M17.599 6.5a3 3 0 0 0 .399-1.375" />
+        <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5" />
+        <path d="M3.477 10.896a4 4 0 0 1 .585-.396" />
+        <path d="M19.938 10.5a4 4 0 0 1 .585.396" />
+        <path d="M6 18a4 4 0 0 1-1.967-.516" />
+        <path d="M19.967 17.484A4 4 0 0 1 18 18" />
+      </svg>
+    );
+
+    const Sparkles = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        <path d="M5 3v4" />
+        <path d="M19 17v4" />
+        <path d="M3 5h4" />
+        <path d="M17 19h4" />
+      </svg>
+    );
+
+    const ArrowRight = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M5 12h14" />
+        <path d="m12 5 7 7-7 7" />
+      </svg>
+    );
+
+    const tracks = [
+      {
+        title: 'Intelligence Gathering',
+        icon: <Lightbulb className="w-6 h-6" />,
+        color: 'from-purple-500 to-pink-500',
+        tools: [
+          {
+            id: 'shorts-intel',
+            name: 'Shorts Intel Hub',
+            description: 'Weekly topics dashboard',
+            url: 'https://shorts-intel-hub-5c45f.web.app/',
+            icon: <Lightbulb className="w-8 h-8" />,
+            color: 'from-purple-500 to-pink-500'
+          }
+        ]
+      },
+      {
+        title: 'Campaign Creation',
+        icon: <Rocket className="w-6 h-6" />,
+        color: 'from-blue-500 to-cyan-500',
+        tools: [
+          {
+            id: 'ytm-agent',
+            name: 'YTM Agent Collective',
+            description: 'Automating GTM with agentic workflow',
+            url: 'https://v3-creative-engine.web.app/agent-collective.html',
+            icon: <Rocket className="w-8 h-8" />,
+            color: 'from-blue-500 to-cyan-500'
+          },
+          {
+            id: 'ytm-creative',
+            name: 'YTM Creative Generator',
+            description: 'Prompt based creative generation',
+            url: 'https://v3-creative-engine.web.app/index.html',
+            icon: <Sparkles className="w-8 h-8" />,
+            color: 'from-violet-500 to-purple-500'
+          },
+          {
+            id: 'ytm-template',
+            name: 'YTM Template Stamper',
+            description: 'Branding Template stamping for FA delivery',
+            url: 'https://v3-creative-engine.web.app/index.html',
+            icon: <Sparkles className="w-8 h-8" />,
+            color: 'from-indigo-500 to-blue-500'
+          }
+        ]
+      },
+      {
+        title: 'Performance Optimization',
+        icon: <BarChart3 className="w-6 h-6" />,
+        color: 'from-pink-500 to-rose-500',
+        tools: [
+          {
+            id: 'shorts-brain',
+            name: "APAC Shorts Brain '26",
+            description: 'Automated campaign performance analysis',
+            url: 'https://apac-shorts-brain-v2.web.app/',
+            icon: <Brain className="w-8 h-8" />,
+            color: 'from-pink-500 to-rose-500'
+          }
+        ]
+      }
+    ];
+
+    function App() {
+      useEffect(() => {
+        // Set favicon to red YouTube play button
+        // Remove any existing favicons
+        const existingFavicons = document.querySelectorAll("link[rel*='icon']");
+        existingFavicons.forEach(favicon => favicon.remove());
+
+        // Create new favicon with SVG data URI
+        const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23ef4444" rx="15"/><path d="M 35 25 L 35 75 L 75 50 Z" fill="white"/></svg>`;
+        const dataUri = `data:image/svg+xml,${svgString}`;
+
+        const favicon = document.createElement('link');
+        favicon.type = 'image/svg+xml';
+        favicon.rel = 'icon';
+        favicon.href = dataUri;
+        document.head.appendChild(favicon);
+      }, []);
+
+      return (
+        <div className="min-h-screen bg-[#1a1a1a]">
+          {/* Hero Section */}
+          <section className="max-w-7xl mx-auto px-6 py-16">
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <h2 className="text-5xl mb-6 text-white">
+                Your Automation Toolbox for Shorts Marketing
+              </h2>
+              <p className="text-xl text-slate-400 leading-relaxed">
+                Customized 1P solutions to automate every aspect of YouTube Shorts campaigns—from insight gathering to creative generation and performance optimization.
+              </p>
+            </div>
+          </section>
+
+          {/* Tools Grid */}
+          <section className="max-w-7xl mx-auto px-6 pb-16">
+            <h3 className="text-4xl mb-12 text-center text-white">Shorts Automation Toolbox</h3>
+            <div className="grid md:grid-cols-3 gap-8">
+              {tracks.map((track) => (
+                <div key={track.title} className="space-y-4">
+                  {/* Track Header */}
+                  <div className="bg-[#2a2a2a] border-2 border-[#ef4444] rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="text-slate-400">
+                        {track.icon}
+                      </div>
+                      <h4 className="text-lg text-white">{track.title}</h4>
+                    </div>
+                  </div>
+
+                  {/* Tools in Track */}
+                  <div className="space-y-4">
+                    {track.tools.map((tool) => {
+                      const hasComingSoonBanner = tool.id === 'ytm-template' || tool.id === 'shorts-brain';
+                      const isDisabled = tool.id === 'ytm-template';
+                      const CardWrapper = isDisabled ? 'div' : 'a';
+                      const cardProps = isDisabled
+                        ? { className: "relative bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg transition-all duration-300 block opacity-60" }
+                        : {
+                            href: tool.url,
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            className: `relative group bg-[#2a2a2a] border border-[#3a3a3a] hover:border-[#ef4444] rounded-lg transition-all duration-300 block`
+                          };
+
+                      return (
+                        <CardWrapper key={tool.id} {...cardProps}>
+                          {hasComingSoonBanner && (
+                            <div className="absolute top-0 right-0 overflow-hidden w-24 h-24 z-10">
+                              <div className="absolute top-4 right-[-32px] w-40 bg-[#ef4444] text-white text-center text-xs py-1 rotate-45 shadow-lg">
+                                Coming Soon
+                              </div>
+                            </div>
+                          )}
+                          <div className="p-5">
+                            {/* Icon and Title */}
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="text-slate-400">
+                                {tool.icon}
+                              </div>
+                              <h5 className={`flex-1 text-white ${!isDisabled && 'group-hover:text-[#ef4444]'} transition-colors`}>
+                                {tool.name}
+                              </h5>
+                            </div>
+
+                            {/* Description */}
+                            <p className="text-sm text-slate-400 mb-4">
+                              {tool.description}
+                            </p>
+
+                            {/* Launch Button */}
+                            {!isDisabled && (
+                              <div className="flex items-center justify-end">
+                                <div className="flex items-center gap-2 bg-[#ef4444] hover:bg-[#dc2626] text-white px-4 py-2 rounded-md text-sm transition-colors">
+                                  <span>Launch</span>
+                                  <ArrowRight className="w-4 h-4" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </CardWrapper>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* How It Works */}
+          <section className="max-w-7xl mx-auto px-6 pb-16">
+            <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-8">
+              <h3 className="text-3xl mb-6 text-center text-white">How Shorts Automation Works</h3>
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="bg-[#3a3a3a] w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <Lightbulb className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h4 className="text-xl mb-2 text-white">1. Intelligence Gathering</h4>
+                  <p className="text-slate-400 text-sm">
+                    Collect trending topics, cultural insights, and music trends from TikTok, Reels, and YouTube Shorts
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-[#3a3a3a] w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <Rocket className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h4 className="text-xl mb-2 text-white">2. Campaign Creation</h4>
+                  <p className="text-slate-400 text-sm">
+                    AI agents automate GTM strategy, creative prompt development, and asset generation with branding templates
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-[#3a3a3a] w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <BarChart3 className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h4 className="text-xl mb-2 text-white">3. Performance Optimization</h4>
+                  <p className="text-slate-400 text-sm">
+                    Automated analysis of campaign performance to continuously optimize and drive OKR results
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Workflow Section */}
+          <section className="bg-[#212121] py-16 border-t border-[#3a3a3a]">
+            <div className="max-w-7xl mx-auto px-6">
+              <h3 className="text-4xl mb-12 text-center text-white">The Complete Workflow</h3>
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-6">
+                  <div className="text-6xl mb-4">📊</div>
+                  <h4 className="text-2xl mb-3 text-white">Insights Phase</h4>
+                  <p className="text-slate-400 text-sm">
+                    <strong className="text-white">Shorts Intel Hub</strong> continuously monitors trending content across platforms, identifying cultural moments and music trends that resonate with your audience.
+                  </p>
+                </div>
+                <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-6">
+                  <div className="text-6xl mb-4">🚀</div>
+                  <h4 className="text-2xl mb-3 text-white">Creation Phase</h4>
+                  <p className="text-slate-400 text-sm">
+                    <strong className="text-white">YTM Agent Collective</strong> and <strong className="text-white">Creative Generator</strong> work together to develop campaigns, create prompts, and generate branded assets using the latest AI models.
+                  </p>
+                </div>
+                <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-6">
+                  <div className="text-6xl mb-4">📈</div>
+                  <h4 className="text-2xl mb-3 text-white">Optimization Phase</h4>
+                  <p className="text-slate-400 text-sm">
+                    <strong className="text-white">APAC Shorts Brain '26</strong> analyzes performance metrics in real-time, providing actionable insights to continuously improve campaign effectiveness.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Footer */}
+          <footer className="bg-[#1a1a1a] border-t border-[#3a3a3a] py-8">
+            <div className="max-w-7xl mx-auto px-6 text-center">
+              <p className="text-slate-500">
+                APAC Shorts Automation Hub • Powered by AI • {new Date().getFullYear()}
+              </p>
+              <p className="text-sm text-slate-600 mt-2">
+                All tools are integrated to provide a seamless automation experience
+              </p>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
