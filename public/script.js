@@ -923,6 +923,47 @@ async function uploadToCurrentCountry() {
   fileInput.click();
 }
 
+/**
+ * Detect image aspect ratio from file
+ */
+async function detectImageAspectRatio(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = function() {
+      const width = this.width;
+      const height = this.height;
+      const aspectRatio = width / height;
+
+      URL.revokeObjectURL(url);
+
+      // Determine closest standard aspect ratio
+      if (aspectRatio > 1.5) {
+        resolve('16:9'); // Landscape
+      } else if (aspectRatio < 0.7) {
+        resolve('9:16'); // Portrait
+      } else if (aspectRatio >= 0.9 && aspectRatio <= 1.1) {
+        resolve('1:1'); // Square
+      } else if (aspectRatio >= 1.2 && aspectRatio <= 1.4) {
+        resolve('4:3'); // Classic
+      } else if (aspectRatio >= 0.7 && aspectRatio < 0.9) {
+        resolve('3:4'); // Portrait classic
+      } else {
+        // Default to closest match
+        resolve(aspectRatio > 1 ? '16:9' : '9:16');
+      }
+    };
+
+    img.onerror = function() {
+      URL.revokeObjectURL(url);
+      resolve('1:1'); // Fallback to square on error
+    };
+
+    img.src = url;
+  });
+}
+
 async function uploadToCountry(country) {
   const fileInput = document.getElementById('uploadFileInput');
   const file = fileInput.files[0];
@@ -976,15 +1017,21 @@ async function uploadFileToCountry(file, country) {
     // Create a unique job ID for uploaded assets
     const uploadJobId = `upload_${timestamp}`;
 
-    // Determine aspect ratio based on file type
-    const defaultFormat = isVideo ? '9:16' : '1:1';
+    // Determine aspect ratio - detect from actual image/video dimensions
+    let detectedFormat = isVideo ? '9:16' : '1:1';
+
+    if (isImage) {
+      // Detect image aspect ratio from actual dimensions
+      detectedFormat = await detectImageAspectRatio(file);
+      console.log(`[YTM Generator] Detected aspect ratio: ${detectedFormat}`);
+    }
 
     // Create job document in jobs collection (so edit features work)
     await db.collection('jobs').doc(uploadJobId).set({
       status: 'complete',
       type: fileType,
       prompt: `Uploaded ${fileType}: ${file.name}`,
-      format: defaultFormat,
+      format: detectedFormat,
       country: country,
       isUploaded: true,  // Flag to identify uploaded assets
       result: {
@@ -999,7 +1046,7 @@ async function uploadFileToCountry(file, country) {
       assetId: uploadJobId,
       url: downloadUrl,
       prompt: `Uploaded ${fileType}: ${file.name}`,
-      format: defaultFormat,
+      format: detectedFormat,
       type: fileType,
       country: country,
       isUploaded: true,  // Flag to identify uploaded assets
