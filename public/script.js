@@ -1248,7 +1248,10 @@ function loadAssetToLightbox(asset) {
     return;
   }
 
-  console.log('[YTM Generator] Loading asset to lightbox:', asset.id, 'URL:', asset.result.url);
+  console.log('[YTM Generator] Loading asset to lightbox:', asset.id);
+  console.log('[YTM Generator] Asset URL:', asset.result.url);
+  console.log('[YTM Generator] Asset type:', asset.type);
+  console.log('[YTM Generator] Full asset:', asset);
 
   // Update state
   state.currentAsset = asset;
