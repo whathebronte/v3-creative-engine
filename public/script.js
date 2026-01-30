@@ -1046,17 +1046,26 @@ function checkActiveJobs() {
 
     if (!job) return;
 
-    if (job.status === 'complete' && job.result?.url) {
-      console.log(`[YTM Generator] Job completed: ${jobId} (${jobInfo.type})`);
+    if (job.status === 'complete') {
+      if (job.result?.url) {
+        console.log(`[YTM Generator] Job completed: ${jobId} (${jobInfo.type})`);
 
-      // Load this asset into lightbox
-      loadAssetToLightbox(job);
+        // Load this asset into lightbox
+        loadAssetToLightbox(job);
 
-      // Remove from tracking
-      state.activeJobs.delete(jobId);
+        // Remove from tracking
+        state.activeJobs.delete(jobId);
 
-      // Hide loading state
-      hideLightboxLoading();
+        // Hide loading state
+        hideLightboxLoading();
+      } else {
+        // Job completed but no result URL - likely blocked by content filter
+        console.error(`[YTM Generator] Job completed without result: ${jobId}`);
+        alert(`Generation failed: Content may have been blocked by safety filters. Try a different prompt.`);
+
+        state.activeJobs.delete(jobId);
+        hideLightboxLoading();
+      }
     } else if (job.status === 'error') {
       console.error(`[YTM Generator] Job failed: ${jobId}`, job.error);
       alert(`Job failed: ${job.error || 'Unknown error'}`);
@@ -1233,11 +1242,13 @@ async function cancelCurrentJob() {
  */
 function loadAssetToLightbox(asset) {
   if (!asset || !asset.result?.url) {
-    console.warn('[YTM Generator] Cannot load asset: missing data');
+    console.warn('[YTM Generator] Cannot load asset: missing data', asset);
+    alert('Cannot load asset: Missing image/video URL. The generation may have been blocked by content filters.');
+    hideLightboxLoading();
     return;
   }
 
-  console.log('[YTM Generator] Loading asset to lightbox:', asset.id);
+  console.log('[YTM Generator] Loading asset to lightbox:', asset.id, 'URL:', asset.result.url);
 
   // Update state
   state.currentAsset = asset;
@@ -1255,9 +1266,9 @@ function loadAssetToLightbox(asset) {
   let mediaHtml;
 
   if (isVideo) {
-    mediaHtml = `<video src="${asset.result.url}" controls autoplay loop></video>`;
+    mediaHtml = `<video src="${asset.result.url}" controls autoplay loop onerror="alert('Failed to load video. URL may be invalid.')"></video>`;
   } else {
-    mediaHtml = `<img src="${asset.result.url}" alt="${asset.prompt || 'Generated image'}" />`;
+    mediaHtml = `<img src="${asset.result.url}" alt="${asset.prompt || 'Generated image'}" onerror="alert('Failed to load image. URL may be invalid or content was filtered.')" />`;
   }
 
   lightboxContent.innerHTML = mediaHtml;
