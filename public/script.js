@@ -1787,98 +1787,146 @@ function showHelpModal() {
     <div class="help-modal-overlay" onclick="this.parentElement.remove()"></div>
     <div class="help-modal-content">
       <div class="help-modal-header">
-        <h2>Action Button Guide</h2>
+        <h2>YTM Creative Generator Guide</h2>
         <button class="help-close-btn" onclick="this.closest('.help-modal').remove()">×</button>
       </div>
       <div class="help-modal-body">
         <div class="help-section">
-          <h3>Generation</h3>
+          <h3>🌍 Country/Market Selection</h3>
+          <div class="help-text">
+            <p>On first visit, select your market: Korea 🇰🇷, Japan 🇯🇵, Indonesia 🇮🇩, or India 🇮🇳. Each country has its own separate gallery and assets. Click the country banner at the top to switch markets anytime.</p>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h3>🎨 Generation Buttons</h3>
           <div class="help-item">
-            <span class="help-icon">⚙️</span>
+            <span class="help-icon">🖼️</span>
             <div class="help-text">
-              <strong>Generate 1</strong>
-              <p>Creates only the first scene from your prompt. If your prompt contains multiple numbered scenes (e.g., "1. sunset, 2. cityscape"), this generates only the first one.</p>
+              <strong>Generate Image</strong>
+              <p>Creates a still image from your prompt using AI. Appears in the main lightbox when complete (30-60 seconds).</p>
             </div>
           </div>
           <div class="help-item">
-            <span class="help-icon">🎨</span>
+            <span class="help-icon">🎬</span>
             <div class="help-text">
-              <strong>Generate All</strong>
-              <p>Creates all numbered scenes from your prompt. Each scene becomes a separate job that appears in the gallery.</p>
+              <strong>Generate Video</strong>
+              <p>Creates a video from your prompt using Gemini Veo 3.1. Takes 3-5 minutes to complete.</p>
+            </div>
+          </div>
+          <div class="help-item">
+            <span class="help-icon">×</span>
+            <div class="help-text">
+              <strong>Cancel Button</strong>
+              <p>Click the × button in the status indicator to cancel an ongoing generation if it's taking too long or you've changed your mind.</p>
             </div>
           </div>
         </div>
 
         <div class="help-section">
-          <h3>Aspect Ratio</h3>
+          <h3>📤 Upload Assets</h3>
+          <div class="help-item">
+            <span class="help-icon">📤</span>
+            <div class="help-text">
+              <strong>Upload Button</strong>
+              <p>Upload your own images or videos from your device. Select the file, choose the country folder, and it will appear in the gallery. All edit features (upscale, iterate, expand, animate) work on uploaded assets just like generated ones.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h3>📐 Aspect Ratio</h3>
           <div class="help-item">
             <span class="help-icon">📐</span>
             <div class="help-text">
               <strong>Aspect Ratio Selector</strong>
-              <p>Choose the dimensions for your generated content. Options: 9:16 (Portrait/TikTok), 16:9 (Landscape/YouTube), 1:1 (Square/Instagram), 4:3 (Classic). Changes apply immediately to the lightbox display and all future generations.</p>
+              <p>Choose dimensions for your content:<br/>
+              • 9:16 (Portrait) - TikTok, Shorts, Reels<br/>
+              • 16:9 (Landscape) - YouTube, traditional video<br/>
+              • 1:1 (Square) - Instagram posts<br/>
+              • 4:3 (Classic) - Old-school format</p>
             </div>
           </div>
         </div>
 
         <div class="help-section">
-          <h3>Actions</h3>
+          <h3>✨ Edit Actions</h3>
           <div class="help-item">
             <span class="help-icon">⊕</span>
             <div class="help-text">
               <strong>Upscale res</strong>
-              <p>Increases the resolution and definition of the current asset in the lightbox while keeping the content exactly the same.</p>
+              <p>Increases resolution and definition while keeping content identical. Works on both images and videos, including uploaded assets.</p>
             </div>
           </div>
           <div class="help-item">
             <span class="help-icon">🔄</span>
             <div class="help-text">
-              <strong>Iterate</strong>
-              <p>Creates a variation of the current asset using the same prompt. The AI generates a different interpretation while maintaining the same theme.</p>
+              <strong>Random Iterate</strong>
+              <p>Creates a random variation using the same prompt. AI generates a different interpretation while maintaining the theme. Works on all assets.</p>
+            </div>
+          </div>
+          <div class="help-item">
+            <span class="help-icon">✏️</span>
+            <div class="help-text">
+              <strong>Prompt Iterate</strong>
+              <p>Modify the asset with a new prompt. Edit the prompt text below, then click this to create a variation with your changes. Works on all assets.</p>
             </div>
           </div>
           <div class="help-item">
             <span class="help-icon">↗️</span>
             <div class="help-text">
               <strong>Expand</strong>
-              <p>Expands the current image beyond its frame, zooming out to reveal more of the scene. Only available for images.</p>
+              <p>Expands the image beyond its frame, zooming out to reveal more of the scene. <strong>Images only</strong>.</p>
             </div>
           </div>
           <div class="help-item">
             <span class="help-icon">🎬</span>
             <div class="help-text">
               <strong>Animate (i2v)</strong>
-              <p><em>Temporarily unavailable</em> - Converts the current image into a 5-second video with subtle animation and movement. Google's Veo video API is not yet publicly accessible. Feature will be enabled when API becomes available.</p>
+              <p>Converts an image into a 5-second video with subtle animation and movement. <strong>Images only</strong>. Works on both generated and uploaded images.</p>
             </div>
           </div>
         </div>
 
         <div class="help-section">
-          <h3>Save & Export</h3>
+          <h3>💾 Save & Export</h3>
           <div class="help-item">
             <span class="help-icon">💾</span>
             <div class="help-text">
-              <strong>Save to gallery</strong>
-              <p>Saves the current lightbox asset to your permanent gallery. Only saved assets appear in the Gallery View on the right.</p>
+              <strong>Save to Gallery</strong>
+              <p>Saves the current lightbox asset to your permanent gallery (right sidebar). Uploaded assets are automatically saved.</p>
             </div>
           </div>
           <div class="help-item">
             <span class="help-icon">⬇️</span>
             <div class="help-text">
               <strong>Download</strong>
-              <p>Downloads the current asset to your device. Images save as JPEG, videos save as MP4.</p>
+              <p>Downloads the asset to your device. Images save as JPEG, videos save as MP4.</p>
             </div>
           </div>
         </div>
 
         <div class="help-section">
-          <h3>Prompt Format</h3>
+          <h3>🚀 Template Stamper Transfer</h3>
+          <div class="help-item">
+            <span class="help-icon">☑️</span>
+            <div class="help-text">
+              <strong>Multi-Select & Transfer</strong>
+              <p>Check the boxes on gallery assets to select multiple items. Click "Send to Template Stamper" button to transfer selected assets to the branding tool for final creative assembly.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-section">
+          <h3>💡 Tips</h3>
           <div class="help-text">
-            <p>You can write prompts with multiple scenes using these formats:</p>
             <ul>
-              <li><code>1. scene text</code> - Numbered with period</li>
-              <li><code>1) scene text</code> - Numbered with parenthesis</li>
-              <li><code>#1 scene text</code> - Hashtag number</li>
-              <li><code>A) scene text</code> - Lettered format</li>
+              <li>Be specific in prompts: "A red sports car racing at sunset on a highway" works better than "car"</li>
+              <li>All country galleries are separate - switch countries to access different assets</li>
+              <li>Uploaded assets have all the same features as generated content</li>
+              <li>Videos take longer to generate (3-5 min) - use the cancel button if needed</li>
+              <li>Save important variations to gallery before generating new content</li>
+              <li>Prompt Iterate allows you to refine and adjust existing assets</li>
             </ul>
           </div>
         </div>
