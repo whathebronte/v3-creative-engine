@@ -7,7 +7,7 @@ const admin = require('firebase-admin');
 
 async function regenerateJob(data, context) {
   try {
-    const { jobId } = data;
+    const { jobId, newPrompt } = data;
 
     if (!jobId) {
       throw new Error('jobId is required');
@@ -24,16 +24,26 @@ async function regenerateJob(data, context) {
 
     const originalJob = originalJobDoc.data();
 
-    // Create new job with same parameters
+    // Use newPrompt if provided, otherwise use original prompt
+    const promptToUse = newPrompt || originalJob.prompt;
+    const source = newPrompt ? 'prompt-iterate' : 'regenerate';
+
+    console.log(`[RegenerateJob] Creating job with source: ${source}`);
+    if (newPrompt) {
+      console.log(`[RegenerateJob] Using new prompt: ${newPrompt}`);
+    }
+
+    // Create new job with same parameters (or updated prompt)
     const newJobRef = await db.collection('jobs').add({
       status: 'pending',
       type: originalJob.type,
-      prompt: originalJob.prompt,
+      prompt: promptToUse,
       format: originalJob.format,
       country: originalJob.country || 'korea',  // Preserve country from original job
       context: {
-        source: 'regenerate',
-        originalJobId: jobId
+        source: source,
+        originalJobId: jobId,
+        ...(newPrompt && { originalPrompt: originalJob.prompt })  // Store original prompt if modified
       },
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
