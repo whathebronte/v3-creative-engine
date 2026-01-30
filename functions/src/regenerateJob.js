@@ -15,17 +15,48 @@ async function regenerateJob(data, context) {
 
     const db = admin.firestore();
 
-    // Get original job
+    let originalJob = null;
+    let jobType = 'image';
+    let jobFormat = '1:1';
+    let jobPrompt = 'Regenerated asset';
+    let jobCountry = 'korea';
+
+    // Try to get original job from jobs collection
     const originalJobDoc = await db.collection('jobs').doc(jobId).get();
 
-    if (!originalJobDoc.exists) {
-      throw new Error('Job not found');
+    if (originalJobDoc.exists) {
+      // Job document found
+      originalJob = originalJobDoc.data();
+      jobType = originalJob.type;
+      jobFormat = originalJob.format;
+      jobPrompt = originalJob.prompt;
+      jobCountry = originalJob.country || 'korea';
+    } else {
+      // Job not found - try to find it in gallery collection
+      console.log(`[RegenerateJob] Job ${jobId} not found in jobs collection, checking gallery...`);
+
+      const gallerySnapshot = await db.collection('gallery')
+        .where('assetId', '==', jobId)
+        .limit(1)
+        .get();
+
+      if (!gallerySnapshot.empty) {
+        const galleryDoc = gallerySnapshot.docs[0];
+        const galleryData = galleryDoc.data();
+
+        jobType = galleryData.type || 'image';
+        jobFormat = galleryData.format || '1:1';
+        jobPrompt = galleryData.prompt || 'Uploaded asset';
+        jobCountry = galleryData.country || 'korea';
+
+        console.log(`[RegenerateJob] Found asset in gallery: type=${jobType}, format=${jobFormat}`);
+      } else {
+        throw new Error('Asset not found in jobs or gallery collections');
+      }
     }
 
-    const originalJob = originalJobDoc.data();
-
     // Use newPrompt if provided, otherwise use original prompt
-    const promptToUse = newPrompt || originalJob.prompt;
+    const promptToUse = newPrompt || jobPrompt;
     const source = newPrompt ? 'prompt-iterate' : 'regenerate';
 
     console.log(`[RegenerateJob] Creating job with source: ${source}`);
@@ -36,14 +67,14 @@ async function regenerateJob(data, context) {
     // Create new job with same parameters (or updated prompt)
     const newJobRef = await db.collection('jobs').add({
       status: 'pending',
-      type: originalJob.type,
+      type: jobType,
       prompt: promptToUse,
-      format: originalJob.format,
-      country: originalJob.country || 'korea',  // Preserve country from original job
+      format: jobFormat,
+      country: jobCountry,
       context: {
         source: source,
         originalJobId: jobId,
-        ...(newPrompt && { originalPrompt: originalJob.prompt })  // Store original prompt if modified
+        ...(newPrompt && { originalPrompt: jobPrompt })  // Store original prompt if modified
       },
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
