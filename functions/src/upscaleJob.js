@@ -15,22 +15,52 @@ async function upscaleJob(data, context) {
 
     const db = admin.firestore();
 
-    // Get original job
+    let jobType = 'image';
+    let jobFormat = '1:1';
+    let jobPrompt = 'Upscale';
+    let jobCountry = 'korea';
+
+    // Try to get original job from jobs collection
     const originalJobDoc = await db.collection('jobs').doc(jobId).get();
 
-    if (!originalJobDoc.exists) {
-      throw new Error('Job not found');
-    }
+    if (originalJobDoc.exists) {
+      // Job document found
+      const originalJob = originalJobDoc.data();
+      jobType = originalJob.type;
+      jobFormat = originalJob.format;
+      jobPrompt = originalJob.prompt;
+      jobCountry = originalJob.country || 'korea';
+    } else {
+      // Job not found - try to find it in gallery collection
+      console.log(`[UpscaleJob] Job ${jobId} not found in jobs collection, checking gallery...`);
 
-    const originalJob = originalJobDoc.data();
+      const gallerySnapshot = await db.collection('gallery')
+        .where('assetId', '==', jobId)
+        .limit(1)
+        .get();
+
+      if (!gallerySnapshot.empty) {
+        const galleryDoc = gallerySnapshot.docs[0];
+        const galleryData = galleryDoc.data();
+
+        jobType = galleryData.type || 'image';
+        jobFormat = galleryData.format || '1:1';
+        jobPrompt = galleryData.prompt || 'Uploaded asset';
+        jobCountry = galleryData.country || 'korea';
+
+        console.log(`[UpscaleJob] Found asset in gallery: type=${jobType}, format=${jobFormat}`);
+      } else {
+        throw new Error('Asset not found in jobs or gallery collections');
+      }
+    }
 
     // Create new job with upscale request
     const newJobRef = await db.collection('jobs').add({
       status: 'pending',
-      type: originalJob.type,
-      prompt: originalJob.prompt,
-      format: originalJob.format,
-      country: originalJob.country || 'korea',  // Preserve country from original job
+      type: jobType,
+      prompt: jobPrompt,
+      format: jobFormat,
+      country: jobCountry,
       context: {
         source: 'upscale',
         originalJobId: jobId,
