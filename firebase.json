@@ -33,6 +33,10 @@
         "destination": "/shorts-intel-hub/index.html"
       },
       {
+        "source": "/shorts-brain/**",
+        "destination": "/shorts-brain/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

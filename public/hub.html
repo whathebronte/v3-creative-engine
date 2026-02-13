@@ -147,7 +147,7 @@
             id: 'shorts-brain',
             name: "APAC Shorts Brain '26",
             description: 'Automated campaign performance analysis',
-            url: 'https://apac-shorts-brain-v2.web.app/',
+            url: 'https://v3-creative-engine.web.app/shorts-brain/',
             icon: <Brain className="w-8 h-8" />,
             color: 'from-pink-500 to-rose-500'
           },
@@ -214,7 +214,7 @@
                   {/* Tools in Track */}
                   <div className="space-y-4">
                     {track.tools.map((tool) => {
-                      const hasComingSoonBanner = tool.id === 'ytm-template' || tool.id === 'shorts-brain' || tool.id === 'campaign-learnings';
+                      const hasComingSoonBanner = tool.id === 'ytm-template' || tool.id === 'campaign-learnings';
                       const isDisabled = tool.id === 'campaign-learnings';
                       const CardWrapper = isDisabled ? 'div' : 'a';
                       const cardProps = isDisabled
