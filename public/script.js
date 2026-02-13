@@ -1076,6 +1076,7 @@ async function uploadFileToCountry(file, country) {
 function closeModals() {
   document.getElementById('countryModal').style.display = 'none';
   document.getElementById('uploadModal').style.display = 'none';
+  document.getElementById('templateStamperModal').style.display = 'none';
 }
 
 // ============================================================================
@@ -1549,6 +1550,17 @@ async function confirmTemplateStamperTransfer() {
       state.selectedAssets.has(asset.id)
     );
 
+    console.log('[YTM Generator] Selected assets for transfer:', selectedAssetData.length);
+    console.log('[YTM Generator] Selected asset IDs:', Array.from(state.selectedAssets));
+    console.log('[YTM Generator] Gallery assets:', state.savedGallery.length);
+
+    if (selectedAssetData.length === 0) {
+      alert('No assets selected. Please select assets from the gallery first.');
+      btn.textContent = originalText;
+      btn.disabled = false;
+      return;
+    }
+
     // Prepare asset data for transfer
     const transferAssets = selectedAssetData.map(asset => ({
       url: asset.url,
@@ -1559,6 +1571,8 @@ async function confirmTemplateStamperTransfer() {
       assetId: asset.assetId,
       savedAt: asset.savedAt
     }));
+
+    console.log('[YTM Generator] Transfer assets prepared:', transferAssets.length);
 
     // Create transfer document in Firestore
     const transferDoc = await db.collection('template_stamper_transfers').add({
@@ -1571,25 +1585,27 @@ async function confirmTemplateStamperTransfer() {
       processedAt: null
     });
 
-    console.log('[YTM Generator] Transfer created:', transferDoc.id);
+    console.log('[YTM Generator] Transfer created:', transferDoc.id, 'with', transferAssets.length, 'assets');
 
-    // Show success
-    btn.textContent = 'Transferred!';
+    // Save asset count before clearing selection
+    const assetCount = transferAssets.length;
 
-    setTimeout(() => {
-      closeModals();
+    // Close modal immediately - use direct reference to ensure it closes
+    const modal = document.getElementById('templateStamperModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
 
-      // Clear selection
-      state.selectedAssets.clear();
-      renderGallery();
+    // Show success toast BEFORE clearing selection
+    showImportToast(`${assetCount} asset(s) sent to Template Stamper queue`);
 
-      // Show success toast
-      showImportToast(`${transferAssets.length} asset(s) sent to Template Stamper queue`);
+    // Clear selection
+    state.selectedAssets.clear();
+    renderGallery();
 
-      // Reset button
-      btn.textContent = originalText;
-      btn.disabled = false;
-    }, 1500);
+    // Reset button
+    btn.textContent = originalText;
+    btn.disabled = false;
 
   } catch (error) {
     console.error('[YTM Generator] Transfer failed:', error);

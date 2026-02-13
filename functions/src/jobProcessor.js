@@ -32,7 +32,16 @@ async function processJob(snap, context) {
     let result;
 
     if (job.type === 'image') {
-      result = await gemini.generateImage(job.prompt, job.format || '1:1');
+      // Check if this is an expand job with reference image
+      const referenceImageUrl = job.context?.referenceImageUrl || null;
+      const expandMode = job.context?.expandMode || false;
+
+      if (referenceImageUrl && expandMode) {
+        console.log(`[JobProcessor] EXPAND MODE - Using reference image: ${referenceImageUrl}`);
+        result = await gemini.generateImage(job.prompt, job.format || '1:1', referenceImageUrl, { expandMode: true });
+      } else {
+        result = await gemini.generateImage(job.prompt, job.format || '1:1');
+      }
 
       // Upload actual image data to Cloud Storage if available
       if (result.data) {

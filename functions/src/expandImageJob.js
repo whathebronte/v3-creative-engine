@@ -19,6 +19,7 @@ async function expandImageJob(data, context) {
     let jobFormat = '1:1';
     let jobPrompt = 'Expand image';
     let jobCountry = 'korea';
+    let gallerySnapshot = null;
 
     // Try to get original job from jobs collection
     const originalJobDoc = await db.collection('jobs').doc(jobId).get();
@@ -34,7 +35,7 @@ async function expandImageJob(data, context) {
       // Job not found - try to find it in gallery collection
       console.log(`[ExpandImage] Job ${jobId} not found in jobs collection, checking gallery...`);
 
-      const gallerySnapshot = await db.collection('gallery')
+      gallerySnapshot = await db.collection('gallery')
         .where('assetId', '==', jobId)
         .limit(1)
         .get();
@@ -58,8 +59,23 @@ async function expandImageJob(data, context) {
       throw new Error('Can only expand images');
     }
 
-    // Modify prompt to request zoomed-out view
-    const expandedPrompt = `${jobPrompt}, zoomed out perspective, wider view showing more context and surroundings`;
+    // Get the original image URL to use as reference
+    let originalImageUrl = null;
+    if (originalJobDoc.exists) {
+      originalImageUrl = originalJobDoc.data().result?.url;
+    } else if (gallerySnapshot && !gallerySnapshot.empty) {
+      originalImageUrl = gallerySnapshot.docs[0].data().url;
+    }
+
+    if (!originalImageUrl) {
+      throw new Error('Original image URL not found');
+    }
+
+    console.log(`[ExpandImage] Using original image URL: ${originalImageUrl}`);
+
+    // Keep original prompt - don't modify it
+    // The AI processor should use the reference image and expand outward
+    const expandedPrompt = `${jobPrompt}`;
 
     // Create new job with expanded view
     const newJobRef = await db.collection('jobs').add({
@@ -71,7 +87,9 @@ async function expandImageJob(data, context) {
       context: {
         source: 'expand',
         originalJobId: jobId,
-        instruction: 'Expand frame to show more of the scene'
+        referenceImageUrl: originalImageUrl,
+        instruction: 'Keep the original image in the center exactly as is, and expand outward to show more surrounding context. Maintain the exact same subject and composition in the center, only add new content around the edges to create a zoomed-out view.',
+        expandMode: true
       },
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
