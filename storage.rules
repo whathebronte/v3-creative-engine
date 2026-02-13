@@ -3,22 +3,80 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Allow public read access to all files (for CDN)
+    // ========================================================================
+    // PUBLIC READ ACCESS
+    // ========================================================================
+
+    // Allow public read access to all files (for CDN and public assets)
     match /{allPaths=**} {
       allow read: if true;
     }
 
-    // Allow uploads to knowledge base folder (Agent Collective)
+    // ========================================================================
+    // CREATIVE GENERATOR & TEMPLATE STAMPER
+    // ========================================================================
+
+    // Creative Generator - User uploaded images
+    match /uploads/{country}/{fileName} {
+      allow write: if request.resource.size < 10 * 1024 * 1024  // Max 10MB
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Template Stamper - Rendered videos (written by Cloud Functions)
+    match /renders/{fileName} {
+      allow write: if false;  // Only Cloud Functions can write
+    }
+
+    // ========================================================================
+    // AGENT COLLECTIVE
+    // ========================================================================
+
+    // Agent Collective - Knowledge base documents
     match /knowledge/{market}/{fileName} {
       allow write: if request.resource.size < 50 * 1024 * 1024  // Max 50MB
                    && request.resource.contentType.matches('application/pdf|application/vnd.openxmlformats-officedocument.*');
     }
 
-    // Allow image uploads to Creative Generator uploads folder
-    match /uploads/{country}/{fileName} {
-      allow write: if request.resource.size < 10 * 1024 * 1024  // Max 10MB
-                   && request.resource.contentType.matches('image/.*');
+    // ========================================================================
+    // SHORTS INTEL HUB
+    // ========================================================================
+
+    // Shorts Intel Hub - Weekly reports and exported data
+    match /shorts-intel-hub/{fileName} {
+      allow write: if false;  // Only Cloud Functions can write
     }
+
+    // ========================================================================
+    // SHORTS BRAIN
+    // ========================================================================
+
+    // Shorts Brain - Campaign assets and analysis results
+    match /shorts-brain/{fileName} {
+      allow write: if request.resource.size < 20 * 1024 * 1024  // Max 20MB
+                   && request.resource.contentType.matches('image/.*|application/json|text/csv');
+    }
+
+    // ========================================================================
+    // REMOTION TEMPLATES
+    // ========================================================================
+
+    // Remotion bundle - Static assets for video rendering
+    match /remotion-bundle/{allPaths=**} {
+      allow write: if false;  // Only Cloud Functions can write
+    }
+
+    // ========================================================================
+    // PUBLIC EXAMPLES
+    // ========================================================================
+
+    // Public example files (like template previews)
+    match /examples/{fileName} {
+      allow write: if false;  // Only Cloud Functions can write
+    }
+
+    // ========================================================================
+    // DEFAULT RULE
+    // ========================================================================
 
     // Only allow writes from Cloud Functions (via admin SDK) for other paths
     match /{allPaths=**} {

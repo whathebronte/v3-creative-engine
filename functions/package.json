@@ -17,7 +17,7 @@
     "@google-cloud/vertexai": "^1.10.0",
     "@google/generative-ai": "^0.2.1",
     "@google-cloud/storage": "^7.7.0",
-    "@google-cloud/sql-connector": "^1.2.0",
+    "@google-cloud/cloud-sql-connector": "^1.2.0",
     "@google-ai/generativelanguage": "^2.5.0",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
