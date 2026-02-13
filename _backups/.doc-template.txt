@@ -1,0 +1,48 @@
+
+---
+
+## Action Items
+
+### Before Migration
+- [ ] Review all credentials above
+- [ ] Identify which credentials are still needed
+- [ ] Store secrets in Google Secret Manager
+- [ ] Update Cloud Functions to use Secret Manager
+- [ ] Remove hardcoded secrets from code
+
+### Google Secret Manager Setup
+
+```bash
+# Enable Secret Manager API
+gcloud services enable secretmanager.googleapis.com --project=v3-creative-engine
+
+# Create secrets
+gcloud secrets create GEMINI_API_KEY --project=v3-creative-engine
+echo -n "YOUR_API_KEY" | gcloud secrets versions add GEMINI_API_KEY --data-file=- --project=v3-creative-engine
+
+# Grant Cloud Functions access
+gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
+  --member="serviceAccount:v3-creative-engine@appspot.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=v3-creative-engine
+```
+
+### In Cloud Functions
+
+```javascript
+// Access secrets from Secret Manager
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+const client = new SecretManagerServiceClient();
+
+async function getSecret(secretName) {
+  const [version] = await client.accessSecretVersion({
+    name: `projects/v3-creative-engine/secrets/${secretName}/versions/latest`,
+  });
+  return version.payload.data.toString();
+}
+
+// Usage
+const apiKey = await getSecret('GEMINI_API_KEY');
+```
+
+---
