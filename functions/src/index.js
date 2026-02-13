@@ -62,4 +62,10 @@ exports.pollVideoOperations = functions.pubsub
 // Download Asset - Proxy for downloading files with proper CORS headers (HTTP endpoint)
 exports.downloadAsset = functions.https.onRequest(downloadAsset);
 
+// Shorts Intel Hub functions (ES Modules)
+// Note: These are exported directly from shorts-intel-hub/index.js using ES module syntax
+// To deploy: Use codebase configuration in firebase.json
+exports.shortsIntelApi = require('./shorts-intel-hub-wrapper').shortsIntelApi;
+exports.shortsIntelWeeklyRefresh = require('./shorts-intel-hub-wrapper').shortsIntelWeeklyRefresh;
+
 console.log('[V3 Functions] Cloud Functions initialized');

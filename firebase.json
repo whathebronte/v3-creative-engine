@@ -25,6 +25,14 @@
     ],
     "rewrites": [
       {
+        "source": "/shorts-intel-hub/api/**",
+        "function": "shortsIntelApi"
+      },
+      {
+        "source": "/shorts-intel-hub/**",
+        "destination": "/shorts-intel-hub/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
