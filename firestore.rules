@@ -80,6 +80,12 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Shorts Brain - Artifacts collection (legacy data structure)
+    match /artifacts/{appId}/public/data/{collection}/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // ========================================================================
     // SHORTS INTEL HUB
     // ========================================================================
