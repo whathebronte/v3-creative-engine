@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.admin == true;
+    }
+
+    function isValidAsset() {
+      // Validate file size (max 100MB)
+      return request.resource.size < 100 * 1024 * 1024;
+    }
+
+    function isImageOrVideo() {
+      // Allow image and video MIME types
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('video/.*');
+    }
+
+    // DEVELOPMENT PHASE: Open access with basic validation
+    // TODO: Add authentication in launch phase
+
+    // Assets directory - uploaded images/videos
+    match /assets/{allPaths=**} {
+      // Anyone can read during development
+      allow read: if true;
+
+      // Anyone can write if file is valid
+      allow write: if isValidAsset() && isImageOrVideo();
+
+      // In launch phase:
+      // allow read: if isAuthenticated();
+      // allow write: if isAuthenticated() &&
+      //                 isValidAsset() &&
+      //                 isImageOrVideo();
+    }
+
+    // Videos directory - rendered output videos
+    match /videos/{allPaths=**} {
+      // Anyone can read during development
+      allow read: if true;
+
+      // Only Cloud Functions can write (service account)
+      allow write: if false; // Functions use Admin SDK, bypasses rules
+
+      // In launch phase:
+      // allow read: if isAuthenticated();
+    }
+
+    // Templates directory - template packages
+    match /templates/{allPaths=**} {
+      // Anyone can read templates
+      allow read: if true;
+
+      // Only admins can upload templates during development
+      allow write: if true; // Change to: isAdmin() in launch phase
+    }
+
+    // Temp directory - automatically cleaned up
+    match /temp/{allPaths=**} {
+      allow read: if true;
+      allow write: if true;
+      // Lifecycle policy deletes after 24 hours
+    }
+
+    // Examples directory - public example videos for documentation
+    match /examples/{allPaths=**} {
+      // Anyone can read examples (public documentation)
+      allow read: if true;
+
+      // Only admins can upload examples
+      allow write: if true; // Change to: isAdmin() in launch phase
+    }
+
+    // Remotion bundle directory - public Remotion project bundle
+    match /remotion-bundle/{allPaths=**} {
+      // Anyone can read Remotion bundle (needed for Cloud Run rendering)
+      allow read: if true;
+
+      // Only admins/functions can upload
+      allow write: if true; // Change to: isAdmin() in launch phase
+    }
+  }
+}

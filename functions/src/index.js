@@ -68,4 +68,17 @@ exports.downloadAsset = functions.https.onRequest(downloadAsset);
 exports.shortsIntelApi = require('./shorts-intel-hub-wrapper').shortsIntelApi;
 exports.shortsIntelWeeklyRefresh = require('./shorts-intel-hub-wrapper').shortsIntelWeeklyRefresh;
 
+// Template Stamper functions (TypeScript ES Modules)
+const templateStamperWrapper = require('./template-stamper-wrapper');
+exports.tsReceiveAssets = templateStamperWrapper.mcpReceiveAssets;
+exports.tsGetTemplates = templateStamperWrapper.getTemplates;
+exports.tsGetTemplate = templateStamperWrapper.getTemplate;
+exports.tsCreateJob = templateStamperWrapper.createJob;
+exports.tsGetJob = templateStamperWrapper.getJob;
+exports.tsGetJobHistory = templateStamperWrapper.getJobHistory;
+exports.tsPreprocessAsset = templateStamperWrapper.preprocessAsset;
+
+// Template Stamper - Firestore trigger (separate from wrapper)
+exports.tsTriggerRemotionRender = templateStamperWrapper.triggerRemotionRender;
+
 console.log('[V3 Functions] Cloud Functions initialized');

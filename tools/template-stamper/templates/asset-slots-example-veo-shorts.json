@@ -1,0 +1,310 @@
+{
+  "templateId": "veo-shorts-v1",
+  "templateName": "Veo on Shorts - Pet Skydiving",
+  "version": "1.0.0",
+  "totalDuration": 17,
+  "description": "A vertical video template showcasing the Veo AI video generation feature within the Shorts mobile interface. Features a 3x3 image grid, prompt input screen, and full-screen generated video result.",
+  "slots": [
+    {
+      "id": "gridImage1",
+      "name": "Grid Image 1",
+      "type": "image",
+      "required": true,
+      "description": "First image in the 3x3 grid display of recent images",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Top left corner of 3x3 grid"
+      }
+    },
+    {
+      "id": "gridImage2",
+      "name": "Grid Image 2",
+      "type": "image",
+      "required": true,
+      "description": "Second image in the 3x3 grid display",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Top center of 3x3 grid"
+      }
+    },
+    {
+      "id": "gridImage3",
+      "name": "Grid Image 3",
+      "type": "image",
+      "required": true,
+      "description": "Third image in the 3x3 grid display",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Top right corner of 3x3 grid"
+      }
+    },
+    {
+      "id": "gridImage4",
+      "name": "Grid Image 4",
+      "type": "image",
+      "required": true,
+      "description": "Fourth image in the 3x3 grid display (middle row, left)",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Middle row, left of 3x3 grid"
+      }
+    },
+    {
+      "id": "gridImage5",
+      "name": "Grid Image 5",
+      "type": "image",
+      "required": true,
+      "description": "Fifth image in the 3x3 grid display (middle row, center)",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Middle row, center of 3x3 grid"
+      }
+    },
+    {
+      "id": "gridImage6",
+      "name": "Grid Image 6",
+      "type": "image",
+      "required": true,
+      "description": "Sixth image in the 3x3 grid display (middle row, right)",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Middle row, right of 3x3 grid"
+      }
+    },
+    {
+      "id": "gridImage7",
+      "name": "Grid Image 7",
+      "type": "image",
+      "required": true,
+      "description": "Seventh image in the 3x3 grid display (bottom row, left)",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Bottom row, left of 3x3 grid"
+      }
+    },
+    {
+      "id": "gridImage8",
+      "name": "Grid Image 8",
+      "type": "image",
+      "required": true,
+      "description": "Eighth image in the 3x3 grid display (bottom row, center)",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Bottom row, center of 3x3 grid"
+      }
+    },
+    {
+      "id": "gridImage9",
+      "name": "Grid Image 9",
+      "type": "image",
+      "required": true,
+      "description": "Ninth image in the 3x3 grid display (bottom row, right)",
+      "timing": {
+        "appearsAt": "0:00",
+        "visibleUntil": "0:02.5",
+        "durationSeconds": 2.5
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Grid Screen",
+        "location": "Bottom row, right of 3x3 grid"
+      }
+    },
+    {
+      "id": "selectedImage1",
+      "name": "Selected Image 1",
+      "type": "image",
+      "required": true,
+      "description": "First selected image shown in the prompt input screen (typically same as one of the grid images)",
+      "timing": {
+        "appearsAt": "0:02.5",
+        "visibleUntil": "0:06.25",
+        "durationSeconds": 3.75
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Prompt Screen",
+        "location": "Left image thumbnail above prompt input"
+      }
+    },
+    {
+      "id": "selectedImage2",
+      "name": "Selected Image 2",
+      "type": "image",
+      "required": true,
+      "description": "Second selected image shown in the prompt input screen",
+      "timing": {
+        "appearsAt": "0:02.5",
+        "visibleUntil": "0:06.25",
+        "durationSeconds": 3.75
+      },
+      "constraints": {
+        "aspectRatio": "1:1",
+        "minWidth": 400,
+        "minHeight": 400,
+        "maxFileSize": 10485760,
+        "formats": ["jpeg", "png"]
+      },
+      "position": {
+        "screen": "Prompt Screen",
+        "location": "Right image thumbnail above prompt input"
+      }
+    },
+    {
+      "id": "promptText",
+      "name": "User Prompt Text",
+      "type": "text",
+      "required": true,
+      "description": "The text prompt entered by the user describing what video to generate",
+      "timing": {
+        "appearsAt": "0:02.5",
+        "visibleUntil": "0:06.25",
+        "durationSeconds": 3.75
+      },
+      "constraints": {
+        "maxLength": 100,
+        "allowedCharacters": "alphanumeric+spaces+punctuation",
+        "fontFamily": "Roboto",
+        "fontSize": 20
+      },
+      "position": {
+        "screen": "Prompt Screen",
+        "location": "Center text input field"
+      },
+      "defaultValue": "Show me and my cat skydiving"
+    },
+    {
+      "id": "generatedVideo",
+      "name": "AI-Generated Video Result",
+      "type": "video",
+      "required": true,
+      "description": "The main AI-generated video output that plays full screen",
+      "timing": {
+        "appearsAt": "0:06.25",
+        "visibleUntil": "0:15",
+        "durationSeconds": 8.75
+      },
+      "constraints": {
+        "aspectRatio": "9:16",
+        "minWidth": 720,
+        "minHeight": 1280,
+        "maxDuration": 15,
+        "maxFileSize": 52428800,
+        "formats": ["mp4", "mov"],
+        "codec": "h264"
+      },
+      "position": {
+        "screen": "Result Screen (Full + Framed)",
+        "location": "Full screen display, then with subtle UI frame overlay"
+      }
+    }
+  ]
+}

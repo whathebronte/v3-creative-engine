@@ -1,0 +1,215 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Template Asset Slots Definition",
+  "description": "Schema for defining asset slots in Template Stamper templates",
+  "type": "object",
+  "required": ["templateId", "templateName", "version", "totalDuration", "slots"],
+  "properties": {
+    "templateId": {
+      "type": "string",
+      "description": "Unique identifier for the template (kebab-case)",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "examples": ["veo-shorts-v1", "product-showcase-v2"]
+    },
+    "templateName": {
+      "type": "string",
+      "description": "Human-readable name of the template",
+      "examples": ["Veo on Shorts - Pet Skydiving", "Product Showcase Template"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version number (major.minor.patch)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0", "2.1.3"]
+    },
+    "totalDuration": {
+      "type": "number",
+      "description": "Total template duration in seconds",
+      "minimum": 5,
+      "maximum": 60,
+      "examples": [17, 24.5, 30]
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the template purpose and style"
+    },
+    "slots": {
+      "type": "array",
+      "description": "Array of asset slot definitions",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "type", "required", "constraints"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique slot identifier (camelCase)",
+            "pattern": "^[a-z][a-zA-Z0-9]*$",
+            "examples": ["gridImage1", "generatedVideo", "userPrompt"]
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable slot name",
+            "examples": ["Grid Image 1", "AI-Generated Video", "User Prompt Text"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["image", "video", "text"],
+            "description": "Type of content this slot accepts"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether this slot must be filled for video generation"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the slot's purpose and usage"
+          },
+          "timing": {
+            "type": "object",
+            "description": "When this slot content appears in the video",
+            "properties": {
+              "appearsAt": {
+                "type": "string",
+                "description": "Timestamp when content appears (MM:SS or MM:SS.ms)",
+                "pattern": "^\\d{1,2}:\\d{2}(\\.\\d+)?$",
+                "examples": ["0:00", "0:02.5", "1:15"]
+              },
+              "visibleUntil": {
+                "type": "string",
+                "description": "Timestamp when content disappears",
+                "pattern": "^\\d{1,2}:\\d{2}(\\.\\d+)?$",
+                "examples": ["0:02.5", "0:15", "1:30"]
+              },
+              "durationSeconds": {
+                "type": "number",
+                "description": "How long the content is visible (seconds)",
+                "minimum": 0.1,
+                "examples": [2.5, 8.75, 15]
+              }
+            }
+          },
+          "constraints": {
+            "type": "object",
+            "description": "Technical constraints for the asset",
+            "properties": {
+              "aspectRatio": {
+                "type": "string",
+                "description": "Required or preferred aspect ratio",
+                "enum": ["1:1", "4:3", "16:9", "9:16", "2:3", "3:2"],
+                "examples": ["1:1", "9:16", "16:9"]
+              },
+              "minWidth": {
+                "type": "integer",
+                "description": "Minimum width in pixels",
+                "minimum": 100,
+                "examples": [400, 720, 1080]
+              },
+              "minHeight": {
+                "type": "integer",
+                "description": "Minimum height in pixels",
+                "minimum": 100,
+                "examples": [400, 1280, 1920]
+              },
+              "maxFileSize": {
+                "type": "integer",
+                "description": "Maximum file size in bytes",
+                "minimum": 1024,
+                "examples": [10485760, 52428800]
+              },
+              "maxDuration": {
+                "type": "number",
+                "description": "Maximum video duration in seconds (for video slots)",
+                "minimum": 1,
+                "maximum": 60,
+                "examples": [10, 15, 30]
+              },
+              "formats": {
+                "type": "array",
+                "description": "Allowed file formats",
+                "items": {
+                  "type": "string",
+                  "enum": ["jpeg", "jpg", "png", "webp", "mp4", "mov", "webm"]
+                },
+                "examples": [
+                  ["jpeg", "png"],
+                  ["mp4", "mov"]
+                ]
+              },
+              "codec": {
+                "type": "string",
+                "description": "Required video codec (for video slots)",
+                "enum": ["h264", "h265", "vp8", "vp9"],
+                "examples": ["h264"]
+              },
+              "maxLength": {
+                "type": "integer",
+                "description": "Maximum character count (for text slots)",
+                "minimum": 1,
+                "examples": [50, 100, 200]
+              },
+              "allowedCharacters": {
+                "type": "string",
+                "description": "Allowed character types (for text slots)",
+                "examples": ["alphanumeric", "alphanumeric+spaces", "alphanumeric+punctuation"]
+              },
+              "fontFamily": {
+                "type": "string",
+                "description": "Font to use (for text slots)",
+                "examples": ["Roboto", "Arial", "Inter"]
+              },
+              "fontSize": {
+                "type": "integer",
+                "description": "Font size in pixels (for text slots)",
+                "minimum": 8,
+                "examples": [16, 24, 32]
+              }
+            }
+          },
+          "position": {
+            "type": "object",
+            "description": "Visual position information (for documentation)",
+            "properties": {
+              "screen": {
+                "type": "string",
+                "description": "Which screen/section the slot appears in",
+                "examples": ["Grid Screen", "Prompt Screen", "Result Screen"]
+              },
+              "location": {
+                "type": "string",
+                "description": "Specific location description",
+                "examples": ["Top left of 3x3 grid", "Full screen", "Center with 20px padding"]
+              },
+              "coordinates": {
+                "type": "object",
+                "description": "Optional exact coordinates",
+                "properties": {
+                  "x": {
+                    "type": "integer",
+                    "description": "X position in pixels"
+                  },
+                  "y": {
+                    "type": "integer",
+                    "description": "Y position in pixels"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "description": "Width in pixels"
+                  },
+                  "height": {
+                    "type": "integer",
+                    "description": "Height in pixels"
+                  }
+                }
+              }
+            }
+          },
+          "defaultValue": {
+            "type": "string",
+            "description": "Optional default asset URL or value if slot is not filled"
+          }
+        }
+      }
+    }
+  }
+}

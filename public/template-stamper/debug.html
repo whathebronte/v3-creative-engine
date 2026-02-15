@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Debug</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #0a0a0a; color: #fff; }
+    pre { background: #1a1a1a; padding: 15px; border-radius: 8px; overflow-x: auto; }
+    .success { color: #10b981; }
+    .error { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>Firebase Connection Debug</h1>
+  <div id="output"></div>
+
+  <script type="module">
+    const output = document.getElementById('output');
+
+    function log(message, isError = false) {
+      const div = document.createElement('div');
+      div.className = isError ? 'error' : 'success';
+      div.textContent = message;
+      output.appendChild(div);
+    }
+
+    log('Starting Firebase connection test...');
+
+    // Import Firebase
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+    import { getFirestore, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPCR5YogTe0vq3hJDQO0YSZJ9uAg1Nn3c",
+      authDomain: "template-stamper-d7045.firebaseapp.com",
+      projectId: "template-stamper-d7045",
+      storageBucket: "template-stamper-d7045.firebasestorage.app",
+      messagingSenderId: "467854516798",
+      appId: "1:467854516798:web:ffb4af2cbb0f8fce698f1c"
+    };
+
+    try {
+      log('Initializing Firebase...');
+      const app = initializeApp(firebaseConfig);
+      log('✓ Firebase initialized');
+
+      log('Connecting to Firestore...');
+      const db = getFirestore(app);
+      log('✓ Firestore connected');
+
+      log('Querying templates collection...');
+      const templatesRef = collection(db, 'templates');
+      const q = query(templatesRef, where('status', '==', 'active'));
+
+      log('Executing query...');
+      const querySnapshot = await getDocs(q);
+
+      log(`✓ Query complete! Found ${querySnapshot.size} templates`);
+
+      if (querySnapshot.size > 0) {
+        querySnapshot.forEach((doc) => {
+          const pre = document.createElement('pre');
+          pre.textContent = `Template ID: ${doc.id}\n${JSON.stringify(doc.data(), null, 2)}`;
+          output.appendChild(pre);
+        });
+      } else {
+        log('⚠ No templates found', true);
+      }
+    } catch (error) {
+      log(`❌ Error: ${error.message}`, true);
+      log(`Stack: ${error.stack}`, true);
+    }
+  </script>
+</body>
+</html>

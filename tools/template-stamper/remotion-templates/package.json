@@ -1,0 +1,36 @@
+{
+  "name": "template-stamper-remotion",
+  "version": "1.0.0",
+  "description": "Remotion video templates for Template Stamper",
+  "scripts": {
+    "start": "remotion studio",
+    "build": "remotion bundle",
+    "render": "remotion render",
+    "upgrade": "remotion upgrade",
+    "test": "eslint src --ext ts,tsx,js,jsx && tsc"
+  },
+  "repository": {},
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@remotion/bundler": "^4.0.411",
+    "@remotion/cli": "^4.0.411",
+    "@remotion/cloudrun": "^4.0.411",
+    "@remotion/renderer": "^4.0.411",
+    "express": "^4.18.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.411"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config": "^4.0.411",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/web": "^0.0.178",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

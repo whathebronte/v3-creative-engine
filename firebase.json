@@ -45,6 +45,10 @@
         "destination": "/creative-generator/index.html"
       },
       {
+        "source": "/template-stamper/**",
+        "destination": "/template-stamper/index.html"
+      },
+      {
         "source": "**",
         "destination": "/hub.html"
       }

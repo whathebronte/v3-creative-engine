@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.admin == true;
+    }
+
+    // DEVELOPMENT PHASE: Open access (no authentication required)
+    // TODO: Enable authentication in launch phase
+
+    // Templates collection
+    match /templates/{templateId} {
+      // Anyone can read templates
+      allow read: if true;
+
+      // Only admins can create/update/delete templates
+      // For now, allow all writes during development
+      allow write: if true; // Change to: isAdmin() in launch phase
+    }
+
+    // Jobs collection
+    match /jobs/{jobId} {
+      // Anyone can read/write jobs during development
+      allow read, write: if true;
+
+      // In launch phase, users can only access their own jobs:
+      // allow read, write: if isAuthenticated() &&
+      //                     resource.data.userId == request.auth.uid;
+    }
+
+    // Assets collection (metadata only, actual files in Storage)
+    match /assets/{assetId} {
+      // Anyone can read/write assets during development
+      allow read, write: if true;
+
+      // In launch phase:
+      // allow read: if isAuthenticated();
+      // allow write: if isAuthenticated();
+    }
+  }
+}
