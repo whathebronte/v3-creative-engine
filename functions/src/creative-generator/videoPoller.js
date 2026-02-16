@@ -5,7 +5,7 @@
  */
 
 const admin = require('firebase-admin');
-const GeminiClient = require('./gemini');
+const GeminiClient = require('../general-context/gemini');
 
 /**
  * Poll all 'generating' video jobs and check their operation status

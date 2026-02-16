@@ -4,7 +4,7 @@
  */
 
 const admin = require('firebase-admin');
-const GeminiClient = require('./gemini');
+const GeminiClient = require('../general-context/gemini');
 
 async function processJob(snap, context) {
   const jobId = context.params.jobId;

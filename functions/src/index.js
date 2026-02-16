@@ -12,18 +12,18 @@ const functions = require('firebase-functions');
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Import handlers
-const { processJob } = require('./jobProcessor');
-const { createTestJob } = require('./testJob');
-const { regenerateJob } = require('./regenerateJob');
-const { upscaleJob } = require('./upscaleJob');
-const { imageToVideoJob } = require('./imageToVideoJob');
-const { expandImageJob } = require('./expandImageJob');
-const { iterateJob } = require('./iterateJob');
-const { importPrompt } = require('./importPrompt');
-const { callGeminiAgent } = require('./callGeminiAgent');
-const { pollVideoOperations } = require('./videoPoller');
-const { downloadAsset } = require('./downloadAsset');
+// Import Creative Generator handlers
+const { processJob } = require('./creative-generator/jobProcessor');
+const { createTestJob } = require('./creative-generator/testJob');
+const { regenerateJob } = require('./creative-generator/regenerateJob');
+const { upscaleJob } = require('./creative-generator/upscaleJob');
+const { imageToVideoJob } = require('./creative-generator/imageToVideoJob');
+const { expandImageJob } = require('./creative-generator/expandImageJob');
+const { iterateJob } = require('./creative-generator/iterateJob');
+const { importPrompt } = require('./creative-generator/importPrompt');
+const { callGeminiAgent } = require('./creative-generator/callGeminiAgent');
+const { pollVideoOperations } = require('./creative-generator/videoPoller');
+const { downloadAsset } = require('./creative-generator/downloadAsset');
 
 // Job processor (Firestore trigger)
 exports.processJob = functions.firestore

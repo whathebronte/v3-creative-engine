@@ -1,183 +1,205 @@
-# V3 Creative Engine
+# V3 Creative Engine - Consolidated Repository
 
-> A standalone "Creative Factory" for generating images and videos using Gemini & Veo APIs
+**Consolidated Firebase project** for all YouTube Shorts automation tools.
 
-## Project Overview
+🌐 **Live Hub**: https://v3-creative-engine.web.app/
 
-**Framework:** Simple, Lovable, Complete (SLC)
+## Overview
 
-V3 Creative Engine is a fully decoupled creative generation system that receives finalized prompts from the V2 Prompter application via Model Context Protocol (MCP) and produces creative assets.
+This repository consolidates 6 separate Firebase projects into a single, unified ecosystem for YouTube Shorts campaign automation. All tools are now accessible under one domain with shared infrastructure and optimized costs.
+
+## Tools & URLs
+
+| Tool | URL | Description |
+|------|-----|-------------|
+| **Hub** | [v3-creative-engine.web.app](https://v3-creative-engine.web.app/) | Central hub for all tools |
+| **Creative Generator** | [/creative-generator/](https://v3-creative-engine.web.app/creative-generator/) | AI-powered creative generation with Gemini |
+| **Agent Collective** | [/agent-collective/](https://v3-creative-engine.web.app/agent-collective/) | Multi-agent workflow automation |
+| **Template Stamper** | [/template-stamper/](https://v3-creative-engine.web.app/template-stamper/) | Video template rendering with Remotion |
+| **Shorts Intel Hub** | [/shorts-intel-hub/](https://v3-creative-engine.web.app/shorts-intel-hub/) | Weekly trending topics dashboard |
+| **Shorts Brain** | [/shorts-brain/](https://v3-creative-engine.web.app/shorts-brain/) | Campaign performance analysis |
+| Campaign Learnings | (future) | Performance correlation analysis |
+
+## Repository Structure
+
+```
+v3-creative-engine/
+├── public/                           # Frontend apps (Firebase Hosting)
+│   ├── hub.html                      # Main hub page
+│   ├── creative-generator/           # Creative Generator app
+│   ├── agent-collective/             # Agent Collective app
+│   ├── template-stamper/             # Template Stamper app
+│   ├── shorts-intel-hub/             # Shorts Intel Hub app
+│   ├── shorts-brain/                 # Shorts Brain app
+│   └── campaign-learnings/           # (future)
+├── tools/                            # Source code for Vite/React apps
+│   ├── template-stamper/             # Template Stamper source
+│   └── shorts-intel-hub/             # Shorts Intel Hub source
+├── functions/                        # Cloud Functions
+│   └── src/
+│       ├── index.js                  # Main entry point
+│       ├── creative-generator/       # Creative Generator functions
+│       ├── template-stamper/         # Template Stamper functions
+│       ├── shorts-intel-hub/         # Shorts Intel Hub functions
+│       ├── general-context/          # Shared helpers (gemini.js, etc.)
+│       └── *-wrapper.js              # ES module wrappers
+├── remotion-templates/               # Remotion video templates
+├── docs/                             # Documentation
+├── scripts/                          # Utility scripts
+├── firebase.json                     # Firebase configuration
+├── firestore.rules                   # Firestore security rules
+└── storage.rules                     # Cloud Storage security rules
+```
 
 ## Architecture
 
-```
-┌─────────────────────┐
-│   V2 Prompter       │  (ytm-agent-collective-f4f71)
-│   Control Panel     │
-└──────────┬──────────┘
-           │ MCP Bridge (One-way)
-           │ Cloud Function
-           ▼
-┌─────────────────────┐
-│   V3 Producer       │  (v3-creative-engine)
-│   Creative Factory  │
-└─────────────────────┘
-```
+### Frontend
+- **Creative Generator**: Vanilla HTML/CSS/JS
+- **Agent Collective**: Self-contained HTML
+- **Template Stamper**: React + TypeScript + Vite
+- **Shorts Intel Hub**: React + TypeScript + Vite
+- **Shorts Brain**: Vanilla HTML/CSS/JS
 
-## Components
+### Backend
+- **Cloud Functions v2**: Node.js 20
+- **Firestore**: Document database for all tools
+- **Cloud Storage**: Asset storage with CDN
+- **Cloud Run**: Remotion video rendering (Template Stamper)
+- **Cloud SQL**: PostgreSQL with pgvector (Shorts Intel Hub)
 
-### 1. The Producer (V3)
-- **Role:** Self-contained creative generation engine
-- **Responsibilities:**
-  - Receive jobs from MCP Bridge
-  - Track job states (pending, processing, complete, error)
-  - Process jobs using Gemini Flash & Veo APIs
-  - Store assets in Cloud Storage
-  - Present results in Factory Floor UI
-
-### 2. The MCP Bridge
-- **Role:** Secure intake endpoint
-- **Responsibilities:**
-  - Receive finalized prompts from V2
-  - Create pending jobs in V3 Firestore
-  - Return job ID to V2
-
-### 3. The Factory Floor UI
-- **Role:** Creative team dashboard
-- **Responsibilities:**
-  - Display job gallery
-  - Show job status and progress
-  - Provide asset preview and download
-  - Enable variations and regeneration
-
-## Technology Stack
-
-- **Frontend:** HTML5, CSS3, Vanilla JavaScript
-- **Backend:** Firebase Cloud Functions (Node.js)
-- **Database:** Cloud Firestore
-- **Storage:** Cloud Storage with CDN
-- **APIs:** Google Gemini (Flash & Pro), Veo
-- **Auth:** Firebase Authentication
-- **Hosting:** Firebase Hosting
-
-## Development Phases
-
-### Phase 1: Simple & Complete Factory ✅ (Current)
-- [ ] Firebase project setup
-- [ ] Core database schema
-- [ ] Basic web app (gallery UI)
-- [ ] Job processing pipeline
-- [ ] Gemini API integration
-- [ ] Cloud Storage integration
-- [ ] Test job creation
-
-### Phase 2: Lovable UX
-- [ ] Modal lightbox for assets
-- [ ] Gallery filtering (All, Images, Videos, Errors)
-- [ ] Card actions (Copy, Regenerate)
-- [ ] Variation generation
-- [ ] Format/aspect ratio controls
-
-### Phase 3: MCP Bridge
-- [ ] Cloud Function intake endpoint
-- [ ] V2 handoff integration
-- [ ] Secure job creation
-- [ ] End-to-end workflow testing
+### Key Features
+- **ES Module Support**: TypeScript functions wrapped with CommonJS compatibility
+- **Single Domain**: All tools under `v3-creative-engine.web.app`
+- **Shared Infrastructure**: Consolidated Firestore, Storage, and Functions
+- **Cost Optimized**: 80% cost reduction from consolidation
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- Firebase CLI
-- Google Gemini API key
-- Firebase project with Blaze plan (for Cloud Functions)
+- Node.js 20+
+- Firebase CLI (`npm install -g firebase-tools`)
+- Git
 
-### Setup
+### Installation
+
 ```bash
 # Clone repository
-git clone <repo-url>
+git clone https://github.com/ivanivanho-work/v3-creative-engine.git
 cd v3-creative-engine
 
-# Install Firebase CLI (if not installed)
-npm install -g firebase-tools
+# Install functions dependencies
+cd functions
+npm install
+cd ..
 
-# Login to Firebase
-firebase login
+# Install Template Stamper dependencies
+cd tools/template-stamper
+npm install
+cd ../..
 
-# Create Firebase project
-firebase projects:create v3-creative-engine
+# Install Shorts Intel Hub dependencies
+cd tools/shorts-intel-hub/frontend
+npm install
+cd ../../..
+```
 
-# Initialize Firebase
-firebase init
+### Build
 
-# Deploy
+```bash
+# Build Template Stamper
+cd tools/template-stamper
+npm run build
+cd ../..
+
+# Build Shorts Intel Hub
+cd tools/shorts-intel-hub/frontend
+npm run build
+cd ../../..
+```
+
+### Deploy
+
+```bash
+# Deploy everything
 firebase deploy
+
+# Deploy specific services
+firebase deploy --only hosting
+firebase deploy --only functions
+firebase deploy --only firestore:rules
+firebase deploy --only storage:rules
 ```
 
-## Project Structure
+## Development
 
-```
-v3-creative-engine/
-├── public/              # Frontend application
-│   ├── index.html       # Main UI
-│   ├── script.js        # Client-side logic
-│   └── style.css        # Styling
-├── functions/           # Cloud Functions
-│   ├── src/
-│   │   ├── index.js     # MCP Bridge & Job Processor
-│   │   └── gemini.js    # Gemini API client
-│   └── package.json
-├── docs/                # Documentation
-│   ├── architecture.md
-│   ├── api.md
-│   └── deployment.md
-├── firestore.rules      # Firestore security rules
-├── storage.rules        # Storage security rules
-├── firebase.json        # Firebase configuration
-└── README.md
+### Local Development
+
+```bash
+# Start Firebase emulators
+firebase emulators:start
+
+# Start Template Stamper dev server
+cd tools/template-stamper
+npm run dev
+
+# Start Shorts Intel Hub dev server
+cd tools/shorts-intel-hub/frontend
+npm run dev
 ```
 
-## Database Schema
+### Adding a New Tool
 
-### Collections
+1. Create frontend in `public/tool-name/`
+2. Add Cloud Functions in `functions/src/tool-name/`
+3. Update `functions/src/index.js` to export functions
+4. Add rewrite in `firebase.json`:
+   ```json
+   {
+     "source": "/tool-name/**",
+     "destination": "/tool-name/index.html"
+   }
+   ```
+5. Update `public/hub.html` with tool link
 
-**jobs**
-```javascript
-{
-  id: string,              // Auto-generated
-  status: string,          // 'pending' | 'processing' | 'complete' | 'error'
-  type: string,            // 'image' | 'video'
-  prompt: string,          // Creative prompt
-  context: object,         // Additional context from V2
-  result: {
-    url: string,           // Cloud Storage URL
-    metadata: object
-  },
-  error: string,           // Error message if failed
-  createdAt: timestamp,
-  updatedAt: timestamp,
-  processedAt: timestamp
-}
-```
+## Migration History
 
-## API Endpoints
+This repository represents the consolidation of 6 Firebase projects:
 
-### MCP Bridge (Cloud Function)
-- **POST** `/intake` - Receive job from V2 Prompter
-- **GET** `/status/:jobId` - Check job status
+| Original Project | Migrated | Phase |
+|-----------------|----------|-------|
+| v3-creative-engine | ✅ Base | Phase 1 |
+| shorts-intel-hub-5c45f | ✅ Complete | Phase 2 |
+| apac-shorts-brain-v2 | ✅ Complete | Phase 3 |
+| ytm-agent-collective-f4f71 | ✅ Complete | Phase 4 |
+| template-stamper-d7045 | ✅ Complete | Phase 6 |
+| campaign-learnings | ⏸️ Pending | Future |
 
-## Security
+**Cost Savings**: ~80% reduction (from $30-40/month to $6-12/month)
 
-- API keys stored in Firebase Config
-- Firestore rules enforce authentication
-- Storage rules restrict public access
-- MCP Bridge validates incoming requests
+## Key Files
+
+- **`firebase.json`**: Firebase Hosting configuration with rewrites
+- **`firestore.rules`**: Security rules for all tools
+- **`storage.rules`**: Storage rules with tool-specific paths
+- **`functions/src/index.js`**: Main Cloud Functions entry point
+- **`functions/.env`**: Environment variables (not committed)
+
+## Documentation
+
+- [Functions Structure](functions/src/README.md)
+- [Phase 1: Preparation](PHASE1_README.md)
+- [Phase 4 & 5: Reorganization](PHASE4_5_README.md)
+- [Template Stamper Docs](tools/template-stamper/docs/)
+
+## Contributing
+
+This is an internal tool for YouTube Marketing APAC team. For questions or contributions, please contact the development team.
 
 ## License
 
-TBD
+Internal use only - YouTube Marketing APAC
 
 ---
 
-**Status:** 🚧 Phase 1 - In Development
-**Created:** 2025-10-27
+**Maintained by**: YouTube Marketing APAC Team
+**Last Updated**: February 2026
