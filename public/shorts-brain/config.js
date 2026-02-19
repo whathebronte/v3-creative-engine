@@ -8,8 +8,11 @@ export const firebaseConfig = {
     appId: "1:964100659393:web:bc6aa41fce9a8770d55c40"
 };
 
-// Gemini API Configuration
-export const GEMINI_API_KEY = "REDACTED_GEMINI_KEY";
+// Gemini API calls are proxied through the callGeminiAgent Cloud Function.
+// DO NOT add a client-side Gemini API key here — it would be publicly visible
+// in the browser and could be misused. Use the Cloud Function instead:
+//   firebase.functions().httpsCallable('callGeminiAgent')({ prompt, context })
+export const GEMINI_API_KEY = null; // Intentionally null - use Cloud Function
 
 // App Configuration
 export const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'animac-app';

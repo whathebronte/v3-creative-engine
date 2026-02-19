@@ -10,14 +10,50 @@ firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 
-# Environment variables
+# Environment variables - NEVER commit these
 .env
 .env.local
 .env.*.local
+.env.*.yaml
+*.env
+*.env.yaml
+.runtimeconfig.json
 
-# API Keys (never commit!)
+# Secret key files - NEVER commit these
 *-key.json
 service-account*.json
+credentials*.json
+*secret*.json
+functions/.env
+functions/.runtimeconfig.json
+
+# Backup files that may contain secrets
+_backups/
+_backups/env-vars-*.md
+
+# Migration archives - historical files from old projects, may contain old secrets
+_migrate/
+
+# Loose working files at repo root (old prototypes, not production code)
+ytm-agent-collective-*.html
+ytm-agent-collective-v2.html
+
+# Archive folder
+_archive/
+
+# Documentation files that embed real config for illustration
+TEMPLATE_STAMPER_INTEGRATION.md
+
+# Debug HTML files (contain hardcoded Firebase configs from old projects)
+**/debug.html
+**/debug-*.html
+
+# Utility scripts that echo config values
+scripts/document-env-vars*.sh
+
+# Template Stamper one-off admin scripts (contain hardcoded keys)
+tools/template-stamper/scripts/add-sample-template.js
+tools/template-stamper/scripts/check-templates.js
 
 # IDE
 .vscode/
@@ -30,7 +66,7 @@ service-account*.json
 .DS_Store
 Thumbs.db
 
-# Build
+# Build output
 dist/
 build/
 .cache/
@@ -39,9 +75,6 @@ build/
 *.log
 logs/
 
-# Firebase Functions
+# Firebase Functions build artefacts
 functions/node_modules/
 functions/lib/
-functions/.runtimeconfig.json
-functions/.env
-_backups/env-vars-*.md
