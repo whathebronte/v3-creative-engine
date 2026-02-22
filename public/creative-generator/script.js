@@ -33,12 +33,15 @@ let state = {
   activeJobs: new Map(),        // Track active generation jobs
   allJobs: [],                  // All jobs for debugging
   currentCountry: 'korea',      // Currently selected country folder
-  selectedAssets: new Set()     // Selected gallery assets for Template Stamper transfer
+  selectedAssets: new Set(),    // Selected gallery assets for Template Stamper transfer
+  referenceCharacters: [],      // Reference characters library
+  selectedReferences: new Set() // Selected reference characters for generation
 };
 
 // Store snapshot listeners so we can unsubscribe when changing countries
 let jobsListener = null;
 let galleryListener = null;
+let referencesListener = null;
 
 // ============================================================================
 // INITIALIZATION
@@ -262,6 +265,9 @@ function setupRealtimeListeners() {
     }, (error) => {
       console.error('[YTM Generator] Error listening to gallery:', error);
     });
+
+  // Initialize reference characters listener
+  setupReferencesListener();
 }
 
 // ============================================================================
@@ -353,13 +359,23 @@ async function generateImage() {
     // Show loading in lightbox
     showLightboxLoading('Generating image...');
 
+    // Get selected reference characters
+    const selectedRefs = Array.from(state.selectedReferences);
+    const referenceCharacters = selectedRefs.map(refId => {
+      const char = state.referenceCharacters.find(c => c.id === refId);
+      return char ? { id: char.id, imageUrl: char.imageUrl, type: char.type || 'subject' } : null;
+    }).filter(Boolean);
+
+    console.log(`[YTM Generator] Using ${referenceCharacters.length} reference character(s)`);
+
     // Call backend to create job
     const createTestJobFn = functions.httpsCallable('createTestJob');
     const result = await createTestJobFn({
       type: 'image',
       prompt: prompt,
       format: state.currentAspectRatio,
-      country: state.currentCountry  // Add country field
+      country: state.currentCountry,  // Add country field
+      referenceCharacters: referenceCharacters  // Include reference characters
     });
 
     const jobId = result.data.jobId;
@@ -399,13 +415,23 @@ async function generateVideo() {
     // Show loading in lightbox
     showLightboxLoading('Generating video...');
 
+    // Get selected reference characters
+    const selectedRefs = Array.from(state.selectedReferences);
+    const referenceCharacters = selectedRefs.map(refId => {
+      const char = state.referenceCharacters.find(c => c.id === refId);
+      return char ? { id: char.id, imageUrl: char.imageUrl, type: char.type || 'subject' } : null;
+    }).filter(Boolean);
+
+    console.log(`[YTM Generator] Using ${referenceCharacters.length} reference character(s) for video`);
+
     // Call backend to create video job
     const createTestJobFn = functions.httpsCallable('createTestJob');
     const result = await createTestJobFn({
       type: 'video',
       prompt: prompt,
       format: state.currentAspectRatio || '9:16',  // Default to 9:16 for videos
-      country: state.currentCountry  // Add country field
+      country: state.currentCountry,  // Add country field
+      referenceCharacters: referenceCharacters  // Include reference characters
     });
 
     const jobId = result.data.jobId;
@@ -1096,16 +1122,21 @@ function checkActiveJobs() {
 
     if (job.status === 'complete') {
       if (job.result?.url) {
-        console.log(`[YTM Generator] Job completed: ${jobId} (${jobInfo.type})`);
+        console.log(`[YTM Generator] Job completed: ${jobId} (${job.type})`);
 
-        // Load this asset into lightbox
-        loadAssetToLightbox(job);
+        // Reference characters don't get loaded into lightbox - they appear in the References tab
+        if (job.type === 'reference_character') {
+          console.log(`[YTM Generator] Reference character created: ${job.name}`);
+          // The References tab will automatically update via the Firestore listener
+        } else {
+          // Load regular images/videos into lightbox
+          loadAssetToLightbox(job);
+          // Hide loading state
+          hideLightboxLoading();
+        }
 
         // Remove from tracking
         state.activeJobs.delete(jobId);
-
-        // Hide loading state
-        hideLightboxLoading();
       } else {
         // Job completed but no result URL - likely blocked by content filter
         console.error(`[YTM Generator] Job completed without result: ${jobId}`);
@@ -1166,7 +1197,19 @@ function updateStatusIndicator() {
   const currentJob = activeJobs[0];
 
   // Update status based on job type and status
-  if (currentJob.type === 'image') {
+  if (currentJob.type === 'reference_character') {
+    // Reference character generation - 30-60 seconds (same as image)
+    statusIndicator.className = 'status-indicator processing';
+
+    if (currentJob.status === 'pending') {
+      statusMessage.textContent = `Creating ${currentJob.name || 'character'}...`;
+      statusTime.textContent = 'Estimated: 30-60 seconds';
+    } else {
+      statusMessage.textContent = `Generating ${currentJob.name || 'character'}...`;
+      statusTime.textContent = 'Estimated: 30-60 seconds';
+    }
+
+  } else if (currentJob.type === 'image') {
     // Image generation - 30-60 seconds
     statusIndicator.className = 'status-indicator processing';
 
@@ -2012,3 +2055,271 @@ function showHelpModal() {
   `;
   document.body.appendChild(modal);
 }
+
+// ============================================================================
+// REFERENCE CHARACTERS SYSTEM
+// ============================================================================
+
+/**
+ * Switch between Gallery and References tabs
+ */
+function switchTab(tabName) {
+  console.log(`[YTM Generator] Switching to ${tabName} tab`);
+
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.tab === tabName) {
+      btn.classList.add('active');
+    }
+  });
+
+  // Update tab content
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+
+  const targetTab = tabName === 'gallery' ? 'galleryTab' : 'referencesTab';
+  document.getElementById(targetTab).classList.add('active');
+}
+
+/**
+ * Setup realtime listener for reference characters
+ */
+function setupReferencesListener() {
+  // Unsubscribe from existing listener if any
+  if (referencesListener) {
+    referencesListener();
+  }
+
+  console.log(`[YTM Generator] Setting up references listener for country: ${state.currentCountry}`);
+
+  // Listen to reference_characters collection (FILTERED BY COUNTRY)
+  referencesListener = db.collection('reference_characters')
+    .where('country', '==', state.currentCountry)
+    .orderBy('createdAt', 'desc')
+    .limit(50)
+    .onSnapshot((snapshot) => {
+      state.referenceCharacters = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      console.log(`[YTM Generator] References updated for ${state.currentCountry}: ${state.referenceCharacters.length} characters`);
+      renderReferencesGrid();
+    }, (error) => {
+      console.error('[YTM Generator] Error listening to references:', error);
+    });
+}
+
+/**
+ * Render the references grid
+ */
+function renderReferencesGrid() {
+  const grid = document.getElementById('referencesGrid');
+
+  if (!grid) {
+    console.error('[YTM Generator] References grid element not found');
+    return;
+  }
+
+  // Empty state
+  if (state.referenceCharacters.length === 0) {
+    grid.innerHTML = `
+      <div class="references-empty">
+        <div class="references-empty-icon">👤</div>
+        <div class="references-empty-title">No Reference Characters</div>
+        <div class="references-empty-text">
+          Create your first reference character to maintain consistency across your creative assets
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Render character cards
+  grid.innerHTML = state.referenceCharacters.map(char => {
+    const isSelected = state.selectedReferences.has(char.id);
+    const charPrompt = char.prompt || '';
+    return `
+      <div class="reference-card ${isSelected ? 'selected' : ''}"
+           onclick="toggleReferenceSelection('${char.id}')"
+           data-ref-id="${char.id}">
+        <div class="reference-image-wrapper">
+          <img src="${char.imageUrl}" alt="${char.name}" class="reference-image" />
+          <div class="reference-type-badge ${char.type}">${char.type}</div>
+        </div>
+        <div class="reference-card-info">
+          <div class="reference-name">${char.name}</div>
+          <div class="reference-description">${charPrompt}</div>
+        </div>
+        <div class="reference-actions">
+          <button class="reference-action-btn" onclick="event.stopPropagation(); viewReferenceDetails('${char.id}')">
+            View
+          </button>
+          <button class="reference-action-btn delete" onclick="event.stopPropagation(); deleteReference('${char.id}')">
+            Delete
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * Toggle reference character selection
+ */
+function toggleReferenceSelection(refId) {
+  if (state.selectedReferences.has(refId)) {
+    state.selectedReferences.delete(refId);
+  } else {
+    state.selectedReferences.add(refId);
+  }
+  renderReferencesGrid();
+  console.log(`[YTM Generator] Selected references:`, Array.from(state.selectedReferences));
+}
+
+/**
+ * View reference character details
+ */
+function viewReferenceDetails(refId) {
+  const ref = state.referenceCharacters.find(r => r.id === refId);
+  if (!ref) return;
+
+  alert(`Reference Character: ${ref.name}\n\nType: ${ref.type}\n\nPrompt: ${ref.prompt}\n\nCreated: ${new Date(ref.createdAt).toLocaleString()}`);
+}
+
+/**
+ * Delete reference character
+ */
+async function deleteReference(refId) {
+  if (!confirm('Are you sure you want to delete this reference character?')) {
+    return;
+  }
+
+  try {
+    await db.collection('reference_characters').doc(refId).delete();
+    console.log(`[YTM Generator] Reference character ${refId} deleted`);
+  } catch (error) {
+    console.error('[YTM Generator] Error deleting reference:', error);
+    alert('Failed to delete reference character. Please try again.');
+  }
+}
+
+/**
+ * Show Create Character Modal
+ */
+document.getElementById('createCharacterBtn').addEventListener('click', () => {
+  const modal = document.getElementById('createCharacterModal');
+  modal.style.display = 'flex';
+
+  // Reset form
+  document.getElementById('characterName').value = '';
+  document.getElementById('characterType').value = 'person';
+  document.getElementById('characterPrompt').value = '';
+  document.getElementById('characterAspectRatio').value = '9:16';
+  updateCharacterCount();
+});
+
+/**
+ * Update character prompt character count
+ */
+function updateCharacterCount() {
+  const prompt = document.getElementById('characterPrompt').value;
+  document.getElementById('promptCharCount').textContent = prompt.length;
+}
+
+// Add character count listener
+document.getElementById('characterPrompt').addEventListener('input', updateCharacterCount);
+
+/**
+ * Generate Reference Character
+ */
+async function generateReferenceCharacter() {
+  const name = document.getElementById('characterName').value.trim();
+  const type = document.getElementById('characterType').value;
+  const prompt = document.getElementById('characterPrompt').value.trim();
+  const aspectRatio = document.getElementById('characterAspectRatio').value;
+
+  // Validation
+  if (!name) {
+    alert('Please enter a character name');
+    return;
+  }
+
+  if (!prompt) {
+    alert('Please enter a character description');
+    return;
+  }
+
+  if (prompt.length > 1000) {
+    alert('Character description must be 1000 characters or less');
+    return;
+  }
+
+  console.log(`[YTM Generator] Creating reference character: ${name}`);
+
+  // Close modal
+  closeModals();
+
+  try {
+    // Create job in Firestore
+    const jobData = {
+      type: 'reference_character',
+      name: name,
+      characterType: type,
+      prompt: prompt,
+      aspectRatio: aspectRatio,
+      country: state.currentCountry,
+      status: 'pending',
+      createdAt: Date.now(),
+      model: 'imagen-3.0-generate-001' // Will be updated to Nano Banana Pro later
+    };
+
+    const jobRef = await db.collection('jobs').add(jobData);
+    console.log(`[YTM Generator] Reference character job created: ${jobRef.id}`);
+
+    // Track the job
+    state.activeJobs.set(jobRef.id, {
+      type: 'reference_character',
+      name: name,
+      startTime: Date.now()
+    });
+
+    // Status indicator will automatically update via updateStatusIndicator()
+    console.log(`[YTM Generator] Reference character generation started. Watch the status indicator at the top.`);
+
+  } catch (error) {
+    console.error('[YTM Generator] Error creating reference character:', error);
+    alert('Failed to create reference character. Please try again.');
+  }
+}
+
+/**
+ * Update the closeModals function to include character modal
+ */
+const originalCloseModals = window.closeModals || function() {
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.style.display = 'none';
+  });
+};
+
+window.closeModals = function() {
+  originalCloseModals();
+  const characterModal = document.getElementById('createCharacterModal');
+  if (characterModal) {
+    characterModal.style.display = 'none';
+  }
+};
+
+// Make functions globally accessible
+window.switchTab = switchTab;
+window.toggleReferenceSelection = toggleReferenceSelection;
+window.viewReferenceDetails = viewReferenceDetails;
+window.deleteReference = deleteReference;
+window.generateReferenceCharacter = generateReferenceCharacter;
+window.updateCharacterCount = updateCharacterCount;
+
+// Initialize references listener when app starts
+// (This will be called from the main initialization function)
+console.log('[YTM Generator] Reference Characters system loaded');

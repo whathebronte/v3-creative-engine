@@ -1565,3 +1565,337 @@ body {
 .country-banner.indonesia {
   background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
 }
+
+/* ============================================================================
+   REFERENCE CHARACTERS TAB
+   ============================================================================ */
+
+/* Tab Navigation */
+.sidebar-tabs {
+  display: flex;
+  background: #000000;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  color: #8a8a8a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tab-btn.active {
+  color: #ffffff;
+  border-bottom-color: #1a73e8;
+  background: rgba(26, 115, 232, 0.08);
+}
+
+.tab-icon {
+  font-size: 18px;
+}
+
+.tab-text {
+  font-weight: 600;
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* References Container */
+.references-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.references-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #0a0a0a;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.references-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+.create-character-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #1a73e8;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-character-btn:hover {
+  background: #1557b0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+/* References Grid */
+.references-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* Reference Character Card */
+.reference-card {
+  position: relative;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reference-card:hover {
+  border-color: #1a73e8;
+  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.2);
+  transform: translateY(-2px);
+}
+
+.reference-card.selected {
+  border-color: #34a853;
+  box-shadow: 0 0 0 2px #34a853;
+}
+
+.reference-image-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 133.33%; /* 9:16 aspect ratio */
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+.reference-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reference-type-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+}
+
+.reference-type-badge.person {
+  background: rgba(26, 115, 232, 0.9);
+}
+
+.reference-type-badge.prop {
+  background: rgba(234, 67, 53, 0.9);
+}
+
+.reference-type-badge.background {
+  background: rgba(52, 168, 83, 0.9);
+}
+
+.reference-card-info {
+  padding: 10px;
+}
+
+.reference-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reference-description {
+  font-size: 11px;
+  color: #8a8a8a;
+  line-height: 1.3;
+  max-height: 32px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.reference-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.reference-card:hover .reference-actions {
+  opacity: 1;
+}
+
+.reference-action-btn {
+  flex: 1;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.reference-action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.reference-action-btn.delete {
+  background: rgba(234, 67, 53, 0.2);
+  border-color: rgba(234, 67, 53, 0.4);
+}
+
+.reference-action-btn.delete:hover {
+  background: rgba(234, 67, 53, 0.4);
+  border-color: rgba(234, 67, 53, 0.6);
+}
+
+/* Character Modal Styles */
+.character-modal {
+  max-width: 500px;
+  width: 90%;
+}
+
+.character-form {
+  margin: 20px 0;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.form-group input[type="text"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 11px;
+  color: #8a8a8a;
+  margin-top: 4px;
+}
+
+/* Empty State */
+.references-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #8a8a8a;
+}
+
+.references-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.references-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.references-empty-text {
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 300px;
+}

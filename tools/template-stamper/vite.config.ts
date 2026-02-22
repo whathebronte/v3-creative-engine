@@ -19,4 +19,5 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
   },
+  base: '/template-stamper/',  // Use relative paths for subdirectory deployment
 });

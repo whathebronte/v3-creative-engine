@@ -41,6 +41,16 @@ service cloud.firestore {
       allow delete: if true;
     }
 
+    // Reference Characters - Reusable character assets for consistent generation
+    match /reference_characters/{characterId} {
+      // Allow read for everyone (Creative Generator and Agent Collective need to read)
+      allow read: if true;
+      // Allow create/delete for everyone (no auth for now)
+      allow create, delete: if true;
+      // Cloud Functions update via admin SDK (bypasses rules)
+      allow update: if false;
+    }
+
     // ========================================================================
     // AGENT COLLECTIVE
     // ========================================================================

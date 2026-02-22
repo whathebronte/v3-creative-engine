@@ -138,26 +138,58 @@
         </div>
       </main>
 
-      <!-- Right Sidebar - Gallery View -->
+      <!-- Right Sidebar - Gallery View & Reference Characters -->
       <aside class="right-sidebar">
-        <div class="gallery-container">
-          <div class="gallery-header">
-            <span class="gallery-title">Gallery View</span>
-            <button id="uploadBtn" class="upload-btn" title="Upload Image or Video">
-              <span class="btn-icon">📤</span>
-              <span class="btn-text">Upload</span>
-            </button>
-          </div>
+        <!-- Tab Navigation -->
+        <div class="sidebar-tabs">
+          <button class="tab-btn active" data-tab="gallery" onclick="switchTab('gallery')">
+            <span class="tab-icon">🖼️</span>
+            <span class="tab-text">Gallery</span>
+          </button>
+          <button class="tab-btn" data-tab="references" onclick="switchTab('references')">
+            <span class="tab-icon">👤</span>
+            <span class="tab-text">References</span>
+          </button>
+        </div>
 
-          <div id="galleryGrid" class="gallery-grid">
-            <!-- Gallery thumbnails will be dynamically inserted here -->
+        <!-- Gallery View Tab -->
+        <div id="galleryTab" class="tab-content active">
+          <div class="gallery-container">
+            <div class="gallery-header">
+              <span class="gallery-title">Gallery View</span>
+              <button id="uploadBtn" class="upload-btn" title="Upload Image or Video">
+                <span class="btn-icon">📤</span>
+                <span class="btn-text">Upload</span>
+              </button>
+            </div>
+
+            <div id="galleryGrid" class="gallery-grid">
+              <!-- Gallery thumbnails will be dynamically inserted here -->
+            </div>
+            <div class="gallery-footer">
+              <button id="sendToTemplateStamperBtn" class="send-to-stamper-btn" disabled onclick="sendToTemplateStamper()">
+                <span class="btn-icon">🚀</span>
+                <span class="btn-text" id="stamperBtnText">Select from gallery for template stamping</span>
+              </button>
+              <button class="help-btn" title="Help" onclick="showHelpModal()">?</button>
+            </div>
           </div>
-          <div class="gallery-footer">
-            <button id="sendToTemplateStamperBtn" class="send-to-stamper-btn" disabled onclick="sendToTemplateStamper()">
-              <span class="btn-icon">🚀</span>
-              <span class="btn-text" id="stamperBtnText">Select from gallery for template stamping</span>
-            </button>
-            <button class="help-btn" title="Help" onclick="showHelpModal()">?</button>
+        </div>
+
+        <!-- Reference Characters Tab -->
+        <div id="referencesTab" class="tab-content">
+          <div class="references-container">
+            <div class="references-header">
+              <span class="references-title">Reference Characters</span>
+              <button id="createCharacterBtn" class="create-character-btn" title="Create New Reference Character">
+                <span class="btn-icon">➕</span>
+                <span class="btn-text">Create</span>
+              </button>
+            </div>
+
+            <div id="referencesGrid" class="references-grid">
+              <!-- Reference character cards will be dynamically inserted here -->
+            </div>
           </div>
         </div>
       </aside>
@@ -254,6 +286,59 @@
     </div>
   </div>
 
+  <!-- Create Reference Character Modal -->
+  <div id="createCharacterModal" class="modal" style="display: none;">
+    <div class="modal-content character-modal">
+      <h3>Create Reference Character</h3>
+      <p>Generate a consistent character for use across your videos and images</p>
+
+      <div class="character-form">
+        <div class="form-group">
+          <label for="characterName">Character Name</label>
+          <input type="text" id="characterName" placeholder="e.g., Sarah the Yoga Instructor" maxlength="50" />
+        </div>
+
+        <div class="form-group">
+          <label for="characterType">Character Type</label>
+          <select id="characterType">
+            <option value="person">Person / Character</option>
+            <option value="prop">Product / Prop</option>
+            <option value="background">Background / Environment</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="characterPrompt">Character Description</label>
+          <textarea
+            id="characterPrompt"
+            placeholder="Example: A yoga instructor in athletic wear demonstrating poses, or a cute cartoon dog mascot with friendly expression"
+            rows="5"
+          ></textarea>
+          <div class="char-count"><span id="promptCharCount">0</span> / 1000 characters</div>
+          <div style="font-size: 11px; color: #8a8a8a; margin-top: 8px; line-height: 1.4;">
+            💡 <strong>Tip:</strong> Focus on general style, clothing, and actions. Avoid specific physical measurements or detailed body descriptions - these may be filtered by content policies.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Aspect Ratio</label>
+          <select id="characterAspectRatio">
+            <option value="9:16" selected>9:16 (Portrait)</option>
+            <option value="1:1">1:1 (Square)</option>
+            <option value="16:9">16:9 (Landscape)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="generateCharacterBtn" class="modal-confirm-btn" onclick="generateReferenceCharacter()">
+          <span class="btn-icon">✨</span> Generate Character
+        </button>
+        <button class="modal-cancel-btn" onclick="closeModals()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -261,6 +346,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
   <!-- App Logic -->
-  <script src="script.js"></script>
+  <script src="script.js?v=2026022201"></script>
 </body>
 </html>

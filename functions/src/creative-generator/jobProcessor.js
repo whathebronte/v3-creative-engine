@@ -31,14 +31,70 @@ async function processJob(snap, context) {
     const startTime = Date.now();
     let result;
 
-    if (job.type === 'image') {
+    if (job.type === 'reference_character') {
+      // Reference Character Generation
+      console.log(`[JobProcessor] Generating reference character: ${job.name}`);
+
+      // Generate the character image
+      result = await gemini.generateImage(job.prompt, job.aspectRatio || '9:16');
+
+      // Upload image to Cloud Storage
+      if (result.data) {
+        console.log(`[JobProcessor] Uploading reference character to Cloud Storage for job ${jobId}`);
+        const storageUrl = await uploadImageToStorage(jobId, result.data);
+        result.url = storageUrl;
+        delete result.data; // Remove base64 data from result
+      }
+
+      const processingTimeMs = Date.now() - startTime;
+
+      // Save to reference_characters collection
+      const characterRef = await db.collection('reference_characters').add({
+        name: job.name,
+        type: job.characterType || 'person',
+        prompt: job.prompt,
+        imageUrl: result.url,
+        aspectRatio: job.aspectRatio || '9:16',
+        country: job.country || 'korea',
+        createdAt: Date.now(),
+        createdFrom: 'creative-generator',
+        metadata: result.metadata
+      });
+
+      console.log(`[JobProcessor] Reference character saved: ${characterRef.id}`);
+
+      // Update job status
+      await jobRef.update({
+        status: 'complete',
+        result: {
+          url: result.url,
+          characterId: characterRef.id,
+          metadata: result.metadata
+        },
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        processingTimeMs,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`[JobProcessor] Reference character job ${jobId} completed in ${processingTimeMs}ms`);
+
+    } else if (job.type === 'image') {
       // Check if this is an expand job with reference image
       const referenceImageUrl = job.context?.referenceImageUrl || null;
       const expandMode = job.context?.expandMode || false;
+      const referenceCharacters = job.referenceCharacters || [];
 
       if (referenceImageUrl && expandMode) {
         console.log(`[JobProcessor] EXPAND MODE - Using reference image: ${referenceImageUrl}`);
         result = await gemini.generateImage(job.prompt, job.format || '1:1', referenceImageUrl, { expandMode: true });
+      } else if (referenceCharacters.length > 0) {
+        console.log(`[JobProcessor] Using ${referenceCharacters.length} reference character(s)`);
+        // Build reference images array for Nano Banana Pro
+        const referenceImages = referenceCharacters.map(char => ({
+          url: char.imageUrl,
+          type: char.type || 'subject'  // 'subject' or 'style'
+        }));
+        result = await gemini.generateImage(job.prompt, job.format || '1:1', null, { referenceImages });
       } else {
         result = await gemini.generateImage(job.prompt, job.format || '1:1');
       }

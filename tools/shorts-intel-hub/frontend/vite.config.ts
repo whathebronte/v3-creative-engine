@@ -26,7 +26,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../../public/shorts-intel-hub',
+    outDir: '../../../public/shorts-intel-hub',  // Fixed: was building to tools/public instead of repo root public/
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
@@ -38,4 +38,5 @@ export default defineConfig({
       },
     },
   },
+  base: '/shorts-intel-hub/',  // Use correct base path for subdirectory deployment
 });

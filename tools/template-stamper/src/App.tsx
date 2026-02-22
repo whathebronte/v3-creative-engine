@@ -8,7 +8,7 @@ import TemplateGuidePage from './pages/TemplateGuidePage';
 
 function App() {
   return (
-    <Router>
+    <Router basename="/template-stamper">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/templates" element={<TemplatesPage />} />
