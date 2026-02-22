@@ -417,16 +417,22 @@ class GeminiClient {
 
   /**
    * Gemini API Veo 3.1 Fast video generation
-   * Uses simpler API key authentication instead of OAuth
+   * Uses OAuth authentication (service account) instead of API key
    * @returns {Object} { operationName: string }
    */
   async _generateVideoGeminiAPI(prompt, aspectRatio, imageBase64 = null, imageMimeType = 'image/png') {
-    // Gemini API base URL
-    const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-    const model = 'veo-3.1-fast-generate-preview';
-    const endpoint = `${baseUrl}/models/${model}:predictLongRunning`;
+    // Use OAuth authentication (same as image generation)
+    const auth = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
+    });
 
-    console.log(`[GeminiAPI] Calling ${model} endpoint`);
+    const client = await auth.getClient();
+    const accessToken = await client.getAccessToken();
+
+    // Vertex AI endpoint for Veo 3.1 Fast
+    const endpoint = `https://${this.location}-aiplatform.googleapis.com/v1/projects/${this.projectId}/locations/${this.location}/publishers/google/models/veo-3.1-fast-generate-preview:predictLongRunning`;
+
+    console.log(`[VertexAI] Calling veo-3.1-fast-generate-preview endpoint`);
 
     // Build instance object
     const instance = {
@@ -439,25 +445,26 @@ class GeminiClient {
         bytesBase64Encoded: imageBase64,
         mimeType: imageMimeType
       };
-      console.log(`[GeminiAPI] IMAGE-TO-VIDEO mode - Image size: ${imageBase64.length} bytes`);
+      console.log(`[VertexAI] IMAGE-TO-VIDEO mode - Image size: ${imageBase64.length} bytes`);
     } else {
-      console.log(`[GeminiAPI] TEXT-TO-VIDEO mode`);
+      console.log(`[VertexAI] TEXT-TO-VIDEO mode`);
     }
 
     // Build request body with instances and parameters
     const requestBody = {
       instances: [instance],
       parameters: {
-        aspectRatio: aspectRatio
+        aspectRatio: aspectRatio,
+        videoDuration: '5s'
       }
     };
 
-    console.log(`[GeminiAPI] Aspect ratio: ${aspectRatio}`);
+    console.log(`[VertexAI] Aspect ratio: ${aspectRatio}`);
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'x-goog-api-key': this.apiKey,
+        'Authorization': `Bearer ${accessToken.token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody)
@@ -465,20 +472,20 @@ class GeminiClient {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error(`[GeminiAPI] Video generation error: ${response.status}`);
-      throw new Error(`Gemini API error: ${response.status} - ${errorData}`);
+      console.error(`[VertexAI] Video generation error: ${response.status}`);
+      throw new Error(`Vertex AI video generation error: ${response.status} - ${errorData}`);
     }
 
     const result = await response.json();
 
-    // Gemini API returns operation name
+    // Vertex AI returns operation name
     if (result.name) {
-      console.log(`[GeminiAPI] Video generation started successfully`);
+      console.log(`[VertexAI] Video generation started successfully`);
       return {
         operationName: result.name
       };
     } else {
-      throw new Error('Unexpected Gemini API response format - no operation name returned');
+      throw new Error('Unexpected Vertex AI response format - no operation name returned');
     }
   }
 
@@ -563,30 +570,37 @@ class GeminiClient {
   }
 
   /**
-   * Check status of long-running Veo operation using Gemini API
-   * @param {string} operationName - The operation name from Gemini API
+   * Check status of long-running Veo operation using Vertex AI
+   * @param {string} operationName - The operation name from Vertex AI
    * @returns {Object} { done: boolean, videoUri: string|null, error: string|null }
    */
   async checkVideoOperationStatus(operationName) {
-    console.log(`[GeminiAPI] Checking operation status: ${operationName}`);
+    console.log(`[VertexAI] Checking operation status: ${operationName}`);
 
-    // Gemini API operation polling endpoint
-    // Format: https://generativelanguage.googleapis.com/v1beta/{OPERATION_NAME}
-    const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-    const endpoint = `${baseUrl}/${operationName}`;
+    // Use OAuth authentication
+    const auth = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
+    });
+
+    const client = await auth.getClient();
+    const accessToken = await client.getAccessToken();
+
+    // Vertex AI operation polling endpoint
+    // The operationName is a full path like: projects/.../locations/.../operations/...
+    const endpoint = `https://${this.location}-aiplatform.googleapis.com/v1/${operationName}`;
 
     try {
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
-          'x-goog-api-key': this.apiKey,
+          'Authorization': `Bearer ${accessToken.token}`,
           'Content-Type': 'application/json',
         }
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error(`[GeminiAPI] Status check failed: ${response.status}`);
+        console.error(`[VertexAI] Status check failed: ${response.status}`);
         throw new Error(`Operation status check failed: ${response.status} - ${errorData}`);
       }
 
@@ -594,11 +608,11 @@ class GeminiClient {
 
       // Check if operation is done
       if (result.done) {
-        console.log(`[GeminiAPI] Operation completed`);
+        console.log(`[VertexAI] Operation completed`);
 
         // Check for errors
         if (result.error) {
-          console.error(`[GeminiAPI] Operation failed:`, result.error);
+          console.error(`[VertexAI] Operation failed:`, result.error);
           return {
             done: true,
             videoUri: null,
@@ -606,60 +620,55 @@ class GeminiClient {
           };
         }
 
-        // Check for safety filter / RAI (Responsible AI) filtered response
-        if (result.response &&
-            result.response.generateVideoResponse &&
-            result.response.generateVideoResponse.raiMediaFilteredCount > 0) {
+        // Vertex AI response format: { done: true, response: { predictions: [...] } }
+        // The video is returned as a base64-encoded MP4 in predictions[0].bytesBase64Encoded
+        if (result.response && result.response.predictions && result.response.predictions[0]) {
+          const prediction = result.response.predictions[0];
 
-          const filterReasons = result.response.generateVideoResponse.raiMediaFilteredReasons || [];
-          const filterMessage = filterReasons.join(' ') || 'Video was blocked by safety filters';
+          // Check for base64 video data
+          if (prediction.bytesBase64Encoded) {
+            console.log(`[VertexAI] Video ready! Base64 data received`);
+            return {
+              done: true,
+              videoData: prediction.bytesBase64Encoded,
+              videoUri: null, // Will be uploaded to Cloud Storage by jobProcessor
+              error: null
+            };
+          }
 
-          console.error(`[GeminiAPI] Video filtered by safety filters:`, filterMessage);
-          return {
-            done: true,
-            videoUri: null,
-            error: `Safety Filter: ${filterMessage}`
-          };
+          // Check for GCS URI (alternative format)
+          if (prediction.gcsUri || prediction.uri) {
+            const videoUri = prediction.gcsUri || prediction.uri;
+            console.log(`[VertexAI] Video ready! URI: ${videoUri}`);
+            return {
+              done: true,
+              videoUri: videoUri,
+              videoData: null,
+              error: null
+            };
+          }
         }
 
-        // Extract video URI from response
-        // Gemini API returns a download URI in a nested structure
-        // Response format: { done: true, response: { generateVideoResponse: { generatedSamples: [{ video: { uri: "..." } }] } } }
-        if (result.response &&
-            result.response.generateVideoResponse &&
-            result.response.generateVideoResponse.generatedSamples &&
-            result.response.generateVideoResponse.generatedSamples[0] &&
-            result.response.generateVideoResponse.generatedSamples[0].video &&
-            result.response.generateVideoResponse.generatedSamples[0].video.uri) {
-
-          const videoUri = result.response.generateVideoResponse.generatedSamples[0].video.uri;
-          console.log(`[GeminiAPI] Video ready! URI: ${videoUri}`);
-          return {
-            done: true,
-            videoUri: videoUri,
-            error: null
-          };
-        } else {
-          console.error(`[GeminiAPI] Operation done but no video URI in response`);
-          console.error(`[GeminiAPI] Response structure:`, JSON.stringify(result.response, null, 2));
-          return {
-            done: true,
-            videoUri: null,
-            error: 'Operation completed but no video URI found in response'
-          };
-        }
+        console.error(`[VertexAI] Operation done but no video data in response`);
+        return {
+          done: true,
+          videoUri: null,
+          videoData: null,
+          error: 'Operation completed but no video data found in response'
+        };
       } else {
         // Still processing
-        console.log(`[GeminiAPI] Operation still in progress`);
+        console.log(`[VertexAI] Operation still in progress`);
         return {
           done: false,
           videoUri: null,
+          videoData: null,
           error: null
         };
       }
 
     } catch (error) {
-      console.error(`[GeminiAPI] Failed to check operation status:`, error);
+      console.error(`[VertexAI] Failed to check operation status:`, error);
       throw error;
     }
   }

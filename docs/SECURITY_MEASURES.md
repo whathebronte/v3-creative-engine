@@ -15,6 +15,8 @@
   - ✅ Old compromised key deleted from Google Cloud Console
   - ✅ All debug logging removed from production code
   - ✅ Functions redeployed with new key
+  - ✅ **Security Hardening:** Migrated video generation from API key auth to OAuth (service account)
+  - ✅ Removed dependency on API keys for Veo 3.1 video generation entirely
 
 ### Why Old Key Wasn't Visible in Console
 The old key `AIzaSyDerHmmrgRGYqhuBtIJToiaHwgovkJArYU` may not be visible because:
@@ -172,9 +174,11 @@ If an API key is leaked:
 
 | Component | Status | Last Audit | Notes |
 |-----------|--------|------------|-------|
-| Gemini API Key | ✅ SECURE | Feb 22, 2026 | New key, debug logs removed |
+| Gemini API Key | ✅ SECURE | Feb 22, 2026 | New key, now only for fallback (OAuth preferred) |
+| Video Generation Auth | ✅ SECURE | Feb 22, 2026 | OAuth (service account), no API key exposure |
+| Image Generation Auth | ✅ SECURE | Feb 22, 2026 | OAuth (service account) via Vertex AI |
 | Git Repository | ✅ SECURE | Feb 20, 2026 | History cleaned, secrets removed |
-| Cloud Functions | ✅ SECURE | Feb 22, 2026 | Minimal logging, env vars only |
+| Cloud Functions | ✅ SECURE | Feb 22, 2026 | Minimal logging, OAuth auth |
 | Firestore Rules | ✅ SECURE | Feb 21, 2026 | Proper read/write restrictions |
 | Firebase Hosting | ✅ SECURE | N/A | No secrets in client code |
 
