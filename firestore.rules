@@ -90,6 +90,12 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Shorts Brain - Weekly snapshots (stateful memory)
+    match /shorts_brain_snapshots/{snapshotId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Shorts Brain - Artifacts collection (legacy data structure)
     match /artifacts/{appId}/public/data/{collection}/{document=**} {
       allow read: if true;

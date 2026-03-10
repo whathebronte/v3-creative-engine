@@ -51,7 +51,7 @@ service firebase.storage {
     // ========================================================================
 
     // Shorts Brain - Campaign assets and analysis results
-    match /shorts-brain/{fileName} {
+    match /shorts-brain/{allPaths=**} {
       allow write: if request.resource.size < 20 * 1024 * 1024  // Max 20MB
                    && request.resource.contentType.matches('image/.*|application/json|text/csv');
     }

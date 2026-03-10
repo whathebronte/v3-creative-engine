@@ -81,4 +81,10 @@ exports.tsPreprocessAsset = templateStamperWrapper.preprocessAsset;
 // Template Stamper - Firestore trigger (separate from wrapper)
 exports.tsTriggerRemotionRender = templateStamperWrapper.triggerRemotionRender;
 
+// Shorts Brain - Memory system for weekly snapshots
+const shortsBrainMemory = require('./shorts-brain/memory');
+exports.sbSaveSnapshot = functions.https.onCall(shortsBrainMemory.saveSnapshot);
+exports.sbLoadSnapshots = functions.https.onCall(shortsBrainMemory.loadSnapshots);
+exports.sbDeleteSnapshot = functions.https.onCall(shortsBrainMemory.deleteSnapshot);
+
 console.log('[V3 Functions] Cloud Functions initialized');
