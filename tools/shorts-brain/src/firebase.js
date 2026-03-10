@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getStorage, ref, uploadBytes, getDownloadURL, listAll, deleteObject } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getBytes, listAll, deleteObject } from 'firebase/storage';
 import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, where, limit, deleteDoc, serverTimestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -31,65 +30,43 @@ export function getWeekId(dateStr) {
 }
 
 /**
- * Upload a JSON blob to Storage
+ * Download a file from Storage as text (uses SDK getBytes, no CORS needed)
  */
-async function uploadJSON(path, data) {
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+async function downloadText(path) {
   const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, blob, { contentType: 'application/json' });
+  const bytes = await getBytes(storageRef);
+  return new TextDecoder().decode(bytes);
 }
 
 /**
- * Download and parse a JSON blob from Storage
+ * Save a weekly snapshot — raw CSVs to Storage, metadata to Firestore.
+ * Raw CSVs are the source of truth; they get re-parsed on load.
  */
-async function downloadJSON(path) {
-  const storageRef = ref(storage, path);
-  const url = await getDownloadURL(storageRef);
-  const res = await fetch(url);
-  return res.json();
-}
-
-/**
- * Save a weekly snapshot — raw CSVs + processed JSON to Storage, metadata to Firestore
- */
-export async function saveSnapshot({ weekId, reportingDate, globalData, regionalData, rawFiles }) {
+export async function saveSnapshot({ weekId, reportingDate, rawFiles }) {
   const basePath = `shorts-brain/weekly/${weekId}`;
 
   // Upload raw CSV files to Storage
+  const savedKeys = [];
   if (rawFiles) {
     for (const [key, file] of Object.entries(rawFiles)) {
       if (!file) continue;
-      const storageRef = ref(storage, `${basePath}/raw/${key}.csv`);
+      const storageRef = ref(storage, `${basePath}/${key}.csv`);
       await uploadBytes(storageRef, file, { contentType: 'text/csv' });
+      savedKeys.push(key);
     }
   }
 
-  // Upload processed data as JSON to Storage (bypasses callable size limits)
-  if (globalData) {
-    await uploadJSON(`${basePath}/processed/globalData.json`, globalData);
-  }
-  if (regionalData) {
-    await uploadJSON(`${basePath}/processed/regionalData.json`, regionalData);
-  }
-
-  // Save lightweight metadata to Firestore (no large data)
-  const rawFileKeys = rawFiles ? Object.keys(rawFiles).filter(k => rawFiles[k]) : [];
+  // Save lightweight metadata to Firestore
   const metadata = {
     weekId,
     reportingDate: reportingDate || null,
     savedAt: serverTimestamp(),
-    markets: regionalData ? Object.keys(regionalData) : [],
-    globalCount: Array.isArray(globalData) ? globalData.length : 0,
-    regionalCounts: regionalData
-      ? Object.fromEntries(Object.entries(regionalData).map(([k, v]) => [k, Array.isArray(v) ? v.length : 0]))
-      : {},
-    rawFileKeys,
-    hasProcessedData: !!(globalData || regionalData)
+    rawFileKeys: savedKeys
   };
 
   await setDoc(doc(db, COLLECTION, weekId), metadata, { merge: true });
 
-  return { weekId, savedAt: new Date().toISOString() };
+  return { weekId, savedAt: new Date().toISOString(), fileCount: savedKeys.length };
 }
 
 /**
@@ -110,9 +87,7 @@ export async function loadSnapshotIndex(year) {
       weekId: data.weekId,
       reportingDate: data.reportingDate,
       savedAt: data.savedAt,
-      markets: data.markets,
-      globalCount: data.globalCount,
-      regionalCounts: data.regionalCounts
+      rawFileKeys: data.rawFileKeys || []
     });
   });
 
@@ -120,44 +95,65 @@ export async function loadSnapshotIndex(year) {
 }
 
 /**
- * Load full snapshot data for specific weeks (fetches processed JSON from Storage)
+ * Load raw CSV files for a snapshot week.
+ * Returns an object matching the uploadedFiles structure so the app can re-parse them.
  */
-export async function loadSnapshots(weekIds) {
-  const snapshots = [];
-  for (const weekId of weekIds) {
-    const basePath = `shorts-brain/weekly/${weekId}/processed`;
-    try {
-      const [globalData, regionalData] = await Promise.all([
-        downloadJSON(`${basePath}/globalData.json`).catch(() => []),
-        downloadJSON(`${basePath}/regionalData.json`).catch(() => ({}))
-      ]);
-      snapshots.push({ weekId, globalData, regionalData });
-    } catch (err) {
-      console.error(`Failed to load snapshot ${weekId}:`, err);
+export async function loadSnapshotFiles(weekId) {
+  const basePath = `shorts-brain/weekly/${weekId}`;
+
+  // List all files in the week's directory
+  const listRef = ref(storage, basePath);
+  let items = [];
+  try {
+    // List files at root level (flat structure)
+    const rootList = await listAll(listRef);
+    items = rootList.items;
+    // Also check raw/ subdirectory (newer format)
+    if (rootList.prefixes.length > 0) {
+      for (const prefix of rootList.prefixes) {
+        const subList = await listAll(prefix);
+        items = items.concat(subList.items);
+      }
     }
+  } catch (err) {
+    console.error('Failed to list snapshot files:', err);
+    return null;
   }
-  return { snapshots, count: snapshots.length };
+
+  // Download all CSV files as text
+  const csvFiles = {};
+  await Promise.all(items.map(async (item) => {
+    if (!item.name.endsWith('.csv')) return;
+    try {
+      const text = await downloadText(item.fullPath);
+      // Extract key from filename (e.g., "pct-global.csv" -> "pct-global")
+      const key = item.name.replace('.csv', '');
+      csvFiles[key] = text;
+    } catch (err) {
+      console.error(`Failed to download ${item.fullPath}:`, err);
+    }
+  }));
+
+  return csvFiles;
 }
 
 /**
  * Delete a snapshot (Storage files + Firestore doc)
  */
 export async function deleteSnapshot(weekId) {
-  // Delete all storage files for this week
   const basePath = `shorts-brain/weekly/${weekId}`;
   try {
     const listRef = ref(storage, basePath);
-    // List and delete all files recursively (raw/ and processed/ subdirs)
-    for (const prefix of ['raw', 'processed']) {
-      const subRef = ref(storage, `${basePath}/${prefix}`);
-      try {
-        const list = await listAll(subRef);
-        await Promise.all(list.items.map(item => deleteObject(item).catch(() => {})));
-      } catch { /* no files to delete */ }
+    const rootList = await listAll(listRef);
+    // Delete root-level files
+    await Promise.all(rootList.items.map(item => deleteObject(item).catch(() => {})));
+    // Delete subdirectory files
+    for (const prefix of rootList.prefixes) {
+      const subList = await listAll(prefix);
+      await Promise.all(subList.items.map(item => deleteObject(item).catch(() => {})));
     }
   } catch { /* no files to delete */ }
 
-  // Delete Firestore doc
   await deleteDoc(doc(db, COLLECTION, weekId));
 
   return { deleted: weekId };

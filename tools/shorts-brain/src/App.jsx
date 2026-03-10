@@ -9,7 +9,7 @@ import {
   RotateCcw, Binary, Power, Settings2, Trash2,
   Target as TargetIcon, Database, Clock, CheckCircle2, AlertCircle, Loader2
 } from 'lucide-react';
-import { saveSnapshot, loadSnapshotIndex, loadSnapshots, deleteSnapshot, getWeekId } from './firebase.js';
+import { saveSnapshot, loadSnapshotIndex, loadSnapshotFiles, deleteSnapshot, getWeekId } from './firebase.js';
 
 /**
  * SHORTS BRAIN 2.0 - APAC Marketing Incrementality Hub
@@ -637,7 +637,7 @@ const OKRAndRecsView = ({ globalData, regionalData, latestDate }) => {
   );
 };
 
-const LandingPage = ({ uploadedFiles, handleFileUpload, startAnalysis, isAnalyzing }) => {
+const LandingPage = ({ uploadedFiles, handleFileUpload, startAnalysis, isAnalyzing, memoryIndex, loadHistoricalWeek, isLoadingMemory, historicalSnapshots }) => {
   const HubRow = ({ type, title, icon: Icon, tag }) => (
     <div className={`p-6 rounded-lg border ${type === 'pct' ? 'border-amber-500/30 bg-[#1a1500]' : 'border-blue-500/30 bg-[#0a0a1a]'} mb-6 transition-all`}>
       <div className="flex items-center gap-4 mb-6 px-4">
@@ -755,6 +755,31 @@ const LandingPage = ({ uploadedFiles, handleFileUpload, startAnalysis, isAnalyzi
           {isAnalyzing ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
           {isAnalyzing ? 'INITIALIZING...' : 'EXECUTE ANALYSIS'}
         </button>
+
+        {/* Stored Memory Snapshots */}
+        {memoryIndex.length > 0 && (
+          <div className="mt-10 p-6 rounded-lg border border-[#3a3a3a] bg-[#1a1a1a]">
+            <div className="flex items-center gap-3 mb-4">
+              <Database className="w-5 h-5 text-[#808080]" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#808080]">Stored Snapshots</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {memoryIndex.map(snap => (
+                <button
+                  key={snap.weekId}
+                  onClick={() => loadHistoricalWeek(snap.weekId)}
+                  disabled={isLoadingMemory}
+                  className="border border-[#3a3a3a] bg-black rounded-lg p-4 text-center hover:border-[#FF0000]/50 hover:bg-[#FF0000]/5 transition-all cursor-pointer group"
+                >
+                  <Clock className="w-4 h-4 text-[#808080] mx-auto mb-2 group-hover:text-[#FF0000]" />
+                  <span className="text-xs font-bold block text-white">{snap.weekId}</span>
+                  <span className="text-[8px] text-[#808080] block mt-1">{snap.reportingDate || 'No date'}</span>
+                  <span className="text-[8px] text-[#555] block">{snap.globalCount || 0} campaigns</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1012,8 +1037,6 @@ const App = () => {
         await saveSnapshot({
           weekId,
           reportingDate: detectedGlobalDate,
-          globalData: globalDataArr,
-          regionalData: regionalMerged,
           rawFiles
         });
         setMemoryStatus('saved');
@@ -1035,18 +1058,200 @@ const App = () => {
       .catch(() => {});
   }, []);
 
-  // Load a historical snapshot into the current view
+  // Load a historical snapshot: download raw CSVs and re-parse them
   const loadHistoricalWeek = useCallback(async (weekId) => {
     setIsLoadingMemory(true);
     try {
-      const result = await loadSnapshots([weekId]);
-      if (result.snapshots && result.snapshots.length > 0) {
-        setHistoricalSnapshots(prev => {
-          const exists = prev.find(s => s.weekId === weekId);
-          if (exists) return prev;
-          return [...prev, result.snapshots[0]];
-        });
+      const csvFiles = await loadSnapshotFiles(weekId);
+      if (!csvFiles || Object.keys(csvFiles).length === 0) {
+        console.error('No CSV files found for', weekId);
+        return;
       }
+
+      // Build metadata lookup from shared-meta CSV
+      let metaLookup = {};
+      if (csvFiles['shared-meta']) {
+        const lines = csvFiles['shared-meta'].split(/\r?\n/).filter(l => l.trim() !== '');
+        if (lines.length > 1) {
+          const hdrs = splitCSVLine(lines[0]);
+          const cIdx = findHeader(hdrs, ['Campaign', 'Campaign Name']);
+          const mktIdx = findHeader(hdrs, ['Market', 'Country']);
+          const tabIdx = findHeader(hdrs, ['Campaign Tabs', 'Tabs', 'Tab']);
+          const subIdx = findHeader(hdrs, ['Sub Tab', 'SubTab', 'Sub-Tab']);
+          const ssIdx = findHeader(hdrs, ['Sub Sub Tab', 'SubSubTab', 'Sub-Sub-Tab']);
+          const startIdx = findHeader(hdrs, ['Campaign Start Date', 'Start Date']);
+          const endIdx = findHeader(hdrs, ['Campaign End Date', 'End Date']);
+          const optIdx = findHeader(hdrs, ['Optimisation End Date', 'Opt End Date']);
+
+          lines.slice(1).forEach(l => {
+            const cols = splitCSVLine(l);
+            const camp = superClean(cols[cIdx]);
+            if (!camp) return;
+            metaLookup[camp] = {
+              market: cleanStr(cols[mktIdx]),
+              tab: cleanStr(cols[tabIdx]),
+              subTab: cleanStr(cols[subIdx]),
+              subSubTab: cleanStr(cols[ssIdx]),
+              campaignStartDate: robustParseDate(cols[startIdx]),
+              campaignEndDate: robustParseDate(cols[endIdx]),
+              optimisationEndDate: robustParseDate(cols[optIdx])
+            };
+          });
+        }
+      }
+
+      // Build instruction map from shared-instructions CSV
+      const instructionMap = {};
+      if (csvFiles['shared-instructions']) {
+        const lines = csvFiles['shared-instructions'].split(/\r?\n/).filter(l => l.trim() !== '');
+        if (lines.length > 1) {
+          const hdrs = splitCSVLine(lines[0]);
+          const cIdx = findHeader(hdrs, ['Campaign', 'Campaign Name']);
+          const aIdx = findHeader(hdrs, ['Age', 'Age Group']);
+          const gIdx = findHeader(hdrs, ['Gender']);
+          const iIdx = findHeader(hdrs, ['Instruction', 'Action']);
+          const dIdx = findHeader(hdrs, ['Launch Date', 'Date']);
+
+          lines.slice(1).forEach(l => {
+            const cols = splitCSVLine(l);
+            const campaign = superClean(cols[cIdx]);
+            if (!campaign) return;
+            const age = (cols[aIdx] || 'total').toLowerCase().trim().replace(/[^a-z0-9+]/g, '');
+            const gender = (cols[gIdx] || 'total').toLowerCase().trim();
+            const instr = (cols[iIdx] || '').toUpperCase().trim();
+            const date = cleanStr(cols[dIdx]);
+
+            if (!instructionMap[campaign]) instructionMap[campaign] = {};
+            if (!instructionMap[campaign][gender]) instructionMap[campaign][gender] = {};
+            instructionMap[campaign][gender][age] = { instruction: instr, launchDate: date };
+          });
+        }
+      }
+
+      // Route data into campaign hub structure
+      const structDataTemp = {};
+      const routeData = (parsedMap, defaultMarket, forceTab = null, forceSub = null) => {
+        Object.values(parsedMap).forEach(row => {
+          const meta = row.meta || {};
+          let rawTab = forceTab || cleanStr(meta.tab) || 'Uncategorized';
+          const matchedChild = CAMPAIGN_CHILDREN.find(child => eq(child.id, rawTab) || eq(child.label, rawTab));
+          const tabKey = matchedChild ? matchedChild.id : rawTab;
+          const sub = forceSub || cleanStr(meta.subTab) || 'Generic';
+          const ssVal = cleanStr(meta.subSubTab) || 'Default';
+          const mk = meta.market || defaultMarket;
+          const campKey = superClean(row.country);
+
+          // Apply pause/relive instructions
+          const campInstr = instructionMap[superClean(row.country)];
+          if (campInstr) {
+            M_TYPES.forEach(m => {
+              GENDERS_KEYS.forEach(g => {
+                AGE_BUCKETS.forEach(a => {
+                  const sanA = a.replace(/[^a-z0-9+]/g, '');
+                  const parentA = (sanA === '1824' || sanA === '2534') ? '1834' : null;
+                  const checkKeys = [
+                    [g, sanA], parentA ? [g, parentA] : null, [g, 'total'],
+                    ['total', sanA], parentA ? ['total', parentA] : null, ['total', 'total']
+                  ].filter(Boolean);
+                  let activeDemInstr = null;
+                  for (const [tg, ta] of checkKeys) {
+                    const found = campInstr[tg]?.[ta];
+                    if (found && found.instruction === 'PAUSE' && found.launchDate && found.launchDate.trim() !== '') {
+                      activeDemInstr = found;
+                      break;
+                    }
+                  }
+                  if (activeDemInstr) {
+                    row.metrics[m][g][a].isPaused = true;
+                    row.metrics[m][g][a].launchDate = activeDemInstr.launchDate;
+                  }
+                });
+              });
+            });
+          }
+
+          if (!structDataTemp[tabKey]) structDataTemp[tabKey] = {};
+          if (!structDataTemp[tabKey][mk]) structDataTemp[tabKey][mk] = {};
+          if (!structDataTemp[tabKey][mk][sub]) structDataTemp[tabKey][mk][sub] = {};
+          if (!structDataTemp[tabKey][mk][sub][ssVal]) structDataTemp[tabKey][mk][sub][ssVal] = {};
+          structDataTemp[tabKey][mk][sub][ssVal][campKey] = row;
+        });
+      };
+
+      // Parse percentage and absolute streams
+      const mergeResults = (pctMap, absMap) => {
+        const merged = { ...pctMap };
+        Object.keys(absMap).forEach(key => {
+          if (!merged[key]) merged[key] = absMap[key];
+          else {
+            M_TYPES.forEach(m => { GENDERS_KEYS.forEach(g => { AGE_BUCKETS.forEach(a => { merged[key].metrics[m][g][a].abs = absMap[key].metrics[m][g][a].abs; }); }); });
+          }
+        });
+        return merged;
+      };
+
+      // Parse global streams
+      const pctGlobal = csvFiles['pct-global'] ? parseCSVData(csvFiles['pct-global'], {}, metaLookup, ['Country', 'Market', 'Campaign'], false) : {};
+      const absGlobal = csvFiles['abs-global'] ? parseCSVData(csvFiles['abs-global'], {}, metaLookup, ['Country', 'Market', 'Campaign'], true) : {};
+      const mergedGlobal = mergeResults(pctGlobal, absGlobal);
+      routeData(mergedGlobal, 'APAC');
+
+      // Detect reporting date from pct-global
+      let loadedDate = null;
+      if (csvFiles['pct-global']) {
+        const lines = csvFiles['pct-global'].split(/\r?\n/).filter(l => l.trim() !== '');
+        if (lines.length > 1) {
+          const hdrs = splitCSVLine(lines[0]);
+          const dateIdx = findHeader(hdrs, ['Date', 'Reporting Date', 'Day']);
+          if (dateIdx !== -1) {
+            lines.slice(1).forEach(l => { const cols = splitCSVLine(l); const d = robustParseDate(cols[dateIdx]); if (d && (!loadedDate || d > loadedDate)) loadedDate = d; });
+          }
+        }
+      }
+
+      // Parse market streams
+      const regionalMerged = {};
+      MARKET_SEGMENTS.forEach(m => {
+        const pctMarket = csvFiles[`pct-market-${m}`] ? parseCSVData(csvFiles[`pct-market-${m}`], {}, metaLookup, undefined, false) : {};
+        const absMarket = csvFiles[`abs-market-${m}`] ? parseCSVData(csvFiles[`abs-market-${m}`], {}, metaLookup, undefined, true) : {};
+        const mMerged = mergeResults(pctMarket, absMarket);
+        regionalMerged[m] = Object.values(mMerged);
+        routeData(mMerged, m);
+      });
+
+      // Parse always-on streams
+      AO_CATEGORIES.forEach(cat => {
+        const pctAO = csvFiles[`pct-ao-${cat}`] ? parseCSVData(csvFiles[`pct-ao-${cat}`], {}, metaLookup, undefined, false) : {};
+        const absAO = csvFiles[`abs-ao-${cat}`] ? parseCSVData(csvFiles[`abs-ao-${cat}`], {}, metaLookup, undefined, true) : {};
+        const mergedAO = mergeResults(pctAO, absAO);
+        routeData(mergedAO, 'India', 'AlwaysOn', cat);
+      });
+
+      // Build final campaign hub structure
+      const finalStructData = {};
+      Object.keys(structDataTemp).forEach(tab => {
+        finalStructData[tab] = {};
+        Object.keys(structDataTemp[tab]).forEach(mk => {
+          finalStructData[tab][mk] = {};
+          Object.keys(structDataTemp[tab][mk]).forEach(sub => {
+            finalStructData[tab][mk][sub] = {};
+            Object.keys(structDataTemp[tab][mk][sub]).forEach(ss => { finalStructData[tab][mk][sub][ss] = Object.values(structDataTemp[tab][mk][sub][ss]); });
+          });
+        });
+      });
+
+      // Set all state
+      setGlobalData(Object.values(mergedGlobal));
+      setRegionalData(regionalMerged);
+      setCampaignHubData(finalStructData);
+      setLatestGlobalDate(loadedDate);
+      setIsAnalyzed(true);
+      setActiveTab('OKR');
+
+      setHistoricalSnapshots(prev => {
+        if (prev.find(s => s.weekId === weekId)) return prev;
+        return [...prev, { weekId }];
+      });
     } catch (err) {
       console.error('Failed to load snapshot:', err);
     } finally {
@@ -1085,7 +1290,7 @@ const App = () => {
     });
   };
 
-  if (!isAnalyzed) return <LandingPage uploadedFiles={uploadedFiles} handleFileUpload={handleFileUpload} startAnalysis={startAnalysis} isAnalyzing={isAnalyzing} />;
+  if (!isAnalyzed) return <LandingPage uploadedFiles={uploadedFiles} handleFileUpload={handleFileUpload} startAnalysis={startAnalysis} isAnalyzing={isAnalyzing} memoryIndex={memoryIndex} loadHistoricalWeek={loadHistoricalWeek} isLoadingMemory={isLoadingMemory} historicalSnapshots={historicalSnapshots} />;
 
   return (
     <div className="flex h-screen bg-black text-[#e0e0e0] overflow-hidden">
