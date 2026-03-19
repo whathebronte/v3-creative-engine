@@ -1734,7 +1734,7 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
 
     function openGenerator() {
       // Open Creative Generator with current market pre-selected
-      window.open(`index.html?market=${state.currentMarket}`, '_blank');
+      window.open(`/creative-generator/?market=${state.currentMarket}`, '_blank');
     }
 
     async function sendToGenerator() {
@@ -1746,7 +1746,7 @@ The prompt after "FINAL PROMPT:" should be a single paragraph, detailed and spec
 
       const encodedPrompt = encodeURIComponent(state.lastFinalizedPrompt);
       // Include market parameter along with prompt
-      window.open(`index.html?prompt=${encodedPrompt}&market=${state.currentMarket}`, '_blank');
+      window.open(`/creative-generator/?prompt=${encodedPrompt}&market=${state.currentMarket}`, '_blank');
 
       await db.collection('prompt_transfers').add({
         prompt: state.lastFinalizedPrompt,

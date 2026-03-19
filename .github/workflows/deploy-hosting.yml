@@ -1,0 +1,52 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Build template-stamper
+      - name: Install template-stamper dependencies
+        working-directory: tools/template-stamper
+        run: npm ci
+
+      - name: Build template-stamper
+        working-directory: tools/template-stamper
+        run: npm run build
+
+      # Build shorts-brain
+      - name: Install shorts-brain dependencies
+        working-directory: tools/shorts-brain
+        run: npm ci
+
+      - name: Build shorts-brain
+        working-directory: tools/shorts-brain
+        run: npm run build
+
+      # Build shorts-intel-hub
+      - name: Install shorts-intel-hub dependencies
+        working-directory: tools/shorts-intel-hub/frontend
+        run: npm ci
+
+      - name: Build shorts-intel-hub
+        working-directory: tools/shorts-intel-hub/frontend
+        run: npm run build
+
+      # Deploy to Firebase Hosting
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_V3_CREATIVE_ENGINE }}
+          channelId: live
+          projectId: v3-creative-engine
