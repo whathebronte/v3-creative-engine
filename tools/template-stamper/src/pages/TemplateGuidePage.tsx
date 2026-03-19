@@ -717,7 +717,7 @@ const VideoPlayerComponent: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  const videoSrc = 'https://firebasestorage.googleapis.com/v0/b/template-stamper-d7045.firebasestorage.app/o/examples%2Fveo-shorts-v1-example.mp4?alt=media';
+  const videoSrc = 'https://firebasestorage.googleapis.com/v0/b/v3-creative-engine.firebasestorage.app/o/examples%2Fveo-shorts-v1-example.mp4?alt=media';
 
   const togglePlay = () => {
     if (videoRef.current) {
