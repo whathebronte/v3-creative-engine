@@ -155,9 +155,10 @@ async function prepareInputProps(
   const props: Record<string, any> = {};
 
   for (const mapping of assetMappings) {
-    const slot = template.slots.find((s: any) => s.id === mapping.slotId);
+    const slot = template.slots.find((s: any) => s.slotId === mapping.slotId);
     if (slot) {
-      props[slot.id] = mapping.assetUrl;
+      // For text slots use textValue, for file slots use storageUrl
+      props[slot.slotId] = mapping.type === 'text' ? mapping.textValue : mapping.storageUrl;
     }
   }
 
@@ -176,11 +177,11 @@ async function generateSignedUrls(
 
   for (const mapping of assetMappings) {
     // Skip if not a Cloud Storage URL (e.g., text values or direct URLs)
-    if (!mapping.assetUrl || !mapping.assetUrl.startsWith('gs://')) {
+    if (!mapping.storageUrl || !mapping.storageUrl.startsWith('gs://')) {
       continue;
     }
 
-    const filePath = mapping.assetUrl.replace('gs://' + bucket.name + '/', '');
+    const filePath = mapping.storageUrl.replace('gs://' + bucket.name + '/', '');
     const file = bucket.file(filePath);
 
     const [url] = await file.getSignedUrl({
