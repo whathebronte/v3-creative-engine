@@ -29,6 +29,7 @@ export default {
           online: '#10b981',
           offline: '#6b7280',
           warning: '#f59e0b',
+          error: '#ef4444',
         },
         border: {
           subtle: '#2a2a2a',

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Button, Badge } from '../ui';
 import { Asset } from '../../hooks/useAssets';
 import { Image, Video, Upload } from 'lucide-react';

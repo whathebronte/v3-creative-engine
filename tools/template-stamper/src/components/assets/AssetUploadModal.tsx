@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button, Card } from '../ui';
 import { UploadArea } from '../ui/UploadArea';
 import { X } from 'lucide-react';
