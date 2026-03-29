@@ -1,205 +1,210 @@
-# V3 Creative Engine - Consolidated Repository
+# V3 Creative Engine
 
-**Consolidated Firebase project** for all YouTube Shorts automation tools.
+Firebase monorepo consolidating 6 YouTube Shorts automation tools into a single ecosystem for the YouTube Marketing APAC team.
 
-🌐 **Live Hub**: https://v3-creative-engine.web.app/
+**Live:** https://v3-creative-engine.web.app/ | **Firebase Project:** `v3-creative-engine`
 
-## Overview
+---
 
-This repository consolidates 6 separate Firebase projects into a single, unified ecosystem for YouTube Shorts campaign automation. All tools are now accessible under one domain with shared infrastructure and optimized costs.
+## Tools
 
-## Tools & URLs
+| Tool | URL | Description | Stack |
+|---|---|---|---|
+| **Hub** | [/](https://v3-creative-engine.web.app/) | Central launcher for all tools | HTML |
+| **Creative Generator** | [/creative-generator/](https://v3-creative-engine.web.app/creative-generator/) | AI image & video generation (Imagen 3 + Veo) | HTML/JS |
+| **Agent Collective** | [/agent-collective/](https://v3-creative-engine.web.app/agent-collective/) | Multi-agent workflow automation | HTML |
+| **Template Stamper** | [/template-stamper/](https://v3-creative-engine.web.app/template-stamper/) | Batch video rendering via Remotion | React + TS |
+| **Shorts Intel Hub** | [/shorts-intel-hub/](https://v3-creative-engine.web.app/shorts-intel-hub/) | Weekly trending topics dashboard | React + TS |
+| **Shorts Brain** | [/shorts-brain/](https://v3-creative-engine.web.app/shorts-brain/) | Campaign performance memory | React |
+| Campaign Learnings | (future) | Performance correlation engine | — |
 
-| Tool | URL | Description |
-|------|-----|-------------|
-| **Hub** | [v3-creative-engine.web.app](https://v3-creative-engine.web.app/) | Central hub for all tools |
-| **Creative Generator** | [/creative-generator/](https://v3-creative-engine.web.app/creative-generator/) | AI-powered creative generation with Gemini |
-| **Agent Collective** | [/agent-collective/](https://v3-creative-engine.web.app/agent-collective/) | Multi-agent workflow automation |
-| **Template Stamper** | [/template-stamper/](https://v3-creative-engine.web.app/template-stamper/) | Video template rendering with Remotion |
-| **Shorts Intel Hub** | [/shorts-intel-hub/](https://v3-creative-engine.web.app/shorts-intel-hub/) | Weekly trending topics dashboard |
-| **Shorts Brain** | [/shorts-brain/](https://v3-creative-engine.web.app/shorts-brain/) | Campaign performance analysis |
-| Campaign Learnings | (future) | Performance correlation analysis |
+---
 
 ## Repository Structure
 
 ```
 v3-creative-engine/
-├── public/                           # Frontend apps (Firebase Hosting)
-│   ├── hub.html                      # Main hub page
-│   ├── creative-generator/           # Creative Generator app
-│   ├── agent-collective/             # Agent Collective app
-│   ├── template-stamper/             # Template Stamper app
-│   ├── shorts-intel-hub/             # Shorts Intel Hub app
-│   ├── shorts-brain/                 # Shorts Brain app
-│   └── campaign-learnings/           # (future)
-├── tools/                            # Source code for Vite/React apps
-│   ├── template-stamper/             # Template Stamper source
-│   └── shorts-intel-hub/             # Shorts Intel Hub source
-├── functions/                        # Cloud Functions
+├── public/                        # Firebase Hosting (static files)
+│   ├── hub.html                   # Hub landing page
+│   ├── creative-generator/        # Vanilla HTML/JS app
+│   ├── agent-collective/          # Vanilla HTML app
+│   ├── shorts-brain/              # React app (pre-built)
+│   ├── shorts-intel-hub/          # React/TypeScript app (pre-built)
+│   └── template-stamper/          # React/TypeScript app (pre-built)
+│
+├── functions/                     # Cloud Functions v2 (Node.js 20)
 │   └── src/
-│       ├── index.js                  # Main entry point
-│       ├── creative-generator/       # Creative Generator functions
-│       ├── template-stamper/         # Template Stamper functions
-│       ├── shorts-intel-hub/         # Shorts Intel Hub functions
-│       ├── general-context/          # Shared helpers (gemini.js, etc.)
-│       └── *-wrapper.js              # ES module wrappers
-├── remotion-templates/               # Remotion video templates
-├── docs/                             # Documentation
-├── scripts/                          # Utility scripts
-├── firebase.json                     # Firebase configuration
-├── firestore.rules                   # Firestore security rules
-└── storage.rules                     # Cloud Storage security rules
+│       ├── index.js               # Main entry point — all function exports
+│       ├── creative-generator/    # Image/video generation (Vertex AI)
+│       ├── shorts-intel-hub/      # Trending topics backend
+│       ├── template-stamper/      # Video rendering backend
+│       ├── shorts-brain/          # Campaign memory system
+│       ├── general-context/       # Shared helpers (Gemini)
+│       ├── shorts-intel-hub-wrapper.js   # ES module compatibility bridge
+│       └── template-stamper-wrapper.js   # ES module compatibility bridge
+│
+├── tools/                         # Source for React apps (build → public/)
+│   ├── template-stamper/          # React + Vite + Remotion source → public/template-stamper/
+│   ├── shorts-intel-hub/          # React + TypeScript source → public/shorts-intel-hub/
+│   └── shorts-brain/              # React + Vite source → public/shorts-brain/
+│
+├── docs/                          # All documentation (see docs/README.md)
+│   ├── README.md                  # Documentation index
+│   ├── architecture/              # System design & technical specs
+│   ├── guides/                    # Setup & operational guides
+│   ├── phases/                    # Phase records & planning
+│   ├── security/                  # Security audit & controls
+│   ├── team/                      # Team task references
+│   └── migration/                 # Consolidation history
+│
+├── scripts/                       # Utility scripts (backup, setup)
+├── CLAUDE.md                      # AI session onboarding guide
+├── firebase.json                  # Hosting rewrites + Functions config
+├── firestore.rules                # Security rules for all tools
+├── firestore.indexes.json         # Firestore composite indexes
+├── storage.rules                  # Cloud Storage security rules
+└── .firebaserc                    # Firebase project binding
 ```
+
+---
 
 ## Architecture
 
-### Frontend
-- **Creative Generator**: Vanilla HTML/CSS/JS
-- **Agent Collective**: Self-contained HTML
-- **Template Stamper**: React + TypeScript + Vite
-- **Shorts Intel Hub**: React + TypeScript + Vite
-- **Shorts Brain**: Vanilla HTML/CSS/JS
+### Infrastructure (100% Google Cloud)
 
-### Backend
-- **Cloud Functions v2**: Node.js 20
-- **Firestore**: Document database for all tools
-- **Cloud Storage**: Asset storage with CDN
-- **Cloud Run**: Remotion video rendering (Template Stamper)
-- **Cloud SQL**: PostgreSQL with pgvector (Shorts Intel Hub)
+```
+Firebase Hosting (v3-creative-engine.web.app)
+    ├── Static SPAs (Creative Generator, Agent Collective, Hub)
+    ├── Built React Apps (Template Stamper, Shorts Intel Hub, Shorts Brain)
+    └── Rewrites → Cloud Functions v2
+            ├── Vertex AI: Imagen 3 (images), Veo (videos), Gemini (text)
+            ├── Cloud Storage: Generated assets (CDN-backed)
+            ├── Firestore: Job state, templates, trends, snapshots
+            ├── Cloud Run: Remotion video rendering (Template Stamper)
+            └── Cloud SQL: PostgreSQL + pgvector (Shorts Intel Hub)
+```
 
-### Key Features
-- **ES Module Support**: TypeScript functions wrapped with CommonJS compatibility
-- **Single Domain**: All tools under `v3-creative-engine.web.app`
-- **Shared Infrastructure**: Consolidated Firestore, Storage, and Functions
-- **Cost Optimized**: 80% cost reduction from consolidation
+### Key Patterns
+- **ES module bridge**: React tool functions (TypeScript) are wrapped with CommonJS-compatible wrapper files so they can be exported from the single `functions/src/index.js` entry point
+- **Function naming**: `ts*` (Template Stamper), `shortsIntel*` (Shorts Intel Hub), `sb*` (Shorts Brain), no prefix (Creative Generator)
+- **Single domain**: All tools under `v3-creative-engine.web.app` via Firebase Hosting rewrites
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 20+
-- Firebase CLI (`npm install -g firebase-tools`)
-- Git
+- Firebase CLI: `npm install -g firebase-tools`
+- Firebase project access: `firebase login`
 
-### Installation
-
+### Install Dependencies
 ```bash
-# Clone repository
-git clone https://github.com/ivanivanho-work/v3-creative-engine.git
-cd v3-creative-engine
-
-# Install functions dependencies
-cd functions
-npm install
-cd ..
-
-# Install Template Stamper dependencies
-cd tools/template-stamper
-npm install
-cd ../..
-
-# Install Shorts Intel Hub dependencies
-cd tools/shorts-intel-hub/frontend
-npm install
-cd ../../..
+cd functions && npm install
+cd tools/template-stamper && npm install
+cd tools/shorts-intel-hub/frontend && npm install
 ```
 
-### Build
-
+### Build React Apps
 ```bash
-# Build Template Stamper
-cd tools/template-stamper
-npm run build
-cd ../..
-
-# Build Shorts Intel Hub
-cd tools/shorts-intel-hub/frontend
-npm run build
-cd ../../..
+cd tools/template-stamper && npm run build           # → public/template-stamper/
+cd tools/shorts-intel-hub/frontend && npm run build  # → public/shorts-intel-hub/
+cd tools/shorts-brain && npm run build               # → public/shorts-brain/
 ```
-
-### Deploy
-
-```bash
-# Deploy everything
-firebase deploy
-
-# Deploy specific services
-firebase deploy --only hosting
-firebase deploy --only functions
-firebase deploy --only firestore:rules
-firebase deploy --only storage:rules
-```
-
-## Development
 
 ### Local Development
-
 ```bash
-# Start Firebase emulators
-firebase emulators:start
-
-# Start Template Stamper dev server
-cd tools/template-stamper
-npm run dev
-
-# Start Shorts Intel Hub dev server
-cd tools/shorts-intel-hub/frontend
-npm run dev
+firebase emulators:start                          # Full local stack
+cd tools/template-stamper && npm run dev          # Template Stamper only
+cd tools/shorts-intel-hub/frontend && npm run dev # Shorts Intel Hub only
 ```
 
-### Adding a New Tool
+### Testing in Google Cloud Shell
+
+Google Cloud Shell is the recommended way to test against the live Firebase project before deploying, without needing local setup.
+
+1. Open [Google Cloud Shell](https://shell.cloud.google.com/?project=v3-creative-engine)
+2. Clone the repo and install deps:
+   ```bash
+   git clone https://github.com/whathebronte/v3-creative-engine.git
+   cd v3-creative-engine
+   cd functions && npm install && cd ..
+   ```
+3. Authenticate Firebase CLI:
+   ```bash
+   firebase login --no-localhost
+   # Follow the URL printed, paste back the auth code
+   ```
+4. Run the Firebase emulators in Cloud Shell:
+   ```bash
+   firebase emulators:start --only firestore,functions,storage
+   ```
+   Cloud Shell will offer a **Web Preview** button (port 4000) to open the Emulator UI.
+5. Test function invocations directly:
+   ```bash
+   # Test a callable function via curl (emulator port 5001)
+   curl -s http://localhost:5001/v3-creative-engine/us-central1/createTestJob \
+     -H "Content-Type: application/json" \
+     -d '{"data": {"type": "image", "prompt": "test"}}'
+   ```
+6. Once satisfied, deploy:
+   ```bash
+   firebase deploy --only functions   # Deploy functions
+   firebase deploy --only hosting     # Deploy frontend
+   ```
+
+**Tips:**
+- Cloud Shell already has `gcloud`, `node`, and `npm` pre-installed
+- Use `firebase emulators:start --import=./emulator-data --export-on-exit` to persist test data between sessions
+- The Emulator UI at port 4000 shows Firestore data, function logs, and Storage in real time
+
+### Deploy
+```bash
+firebase deploy                           # Everything
+firebase deploy --only hosting            # Frontend only
+firebase deploy --only functions          # Backend only
+firebase deploy --only firestore:rules    # Firestore rules only
+```
+
+---
+
+## Adding a New Tool
 
 1. Create frontend in `public/tool-name/`
 2. Add Cloud Functions in `functions/src/tool-name/`
-3. Update `functions/src/index.js` to export functions
-4. Add rewrite in `firebase.json`:
-   ```json
-   {
-     "source": "/tool-name/**",
-     "destination": "/tool-name/index.html"
-   }
-   ```
-5. Update `public/hub.html` with tool link
+3. Export functions from `functions/src/index.js`
+4. Add hosting rewrite to `firebase.json`
+5. Add tool link to `public/hub.html`
+
+---
 
 ## Migration History
 
-This repository represents the consolidation of 6 Firebase projects:
-
-| Original Project | Migrated | Phase |
-|-----------------|----------|-------|
-| v3-creative-engine | ✅ Base | Phase 1 |
+| Original Project | Status | Phase |
+|---|---|---|
+| v3-creative-engine (base) | ✅ Complete | Phase 1 |
 | shorts-intel-hub-5c45f | ✅ Complete | Phase 2 |
 | apac-shorts-brain-v2 | ✅ Complete | Phase 3 |
 | ytm-agent-collective-f4f71 | ✅ Complete | Phase 4 |
 | template-stamper-d7045 | ✅ Complete | Phase 6 |
 | campaign-learnings | ⏸️ Pending | Future |
 
-**Cost Savings**: ~80% reduction (from $30-40/month to $6-12/month)
-
-## Key Files
-
-- **`firebase.json`**: Firebase Hosting configuration with rewrites
-- **`firestore.rules`**: Security rules for all tools
-- **`storage.rules`**: Storage rules with tool-specific paths
-- **`functions/src/index.js`**: Main Cloud Functions entry point
-- **`functions/.env`**: Environment variables (not committed)
-
-## Documentation
-
-- [Functions Structure](functions/src/README.md)
-- [Phase 1: Preparation](PHASE1_README.md)
-- [Phase 4 & 5: Reorganization](PHASE4_5_README.md)
-- [Template Stamper Docs](tools/template-stamper/docs/)
-
-## Contributing
-
-This is an internal tool for YouTube Marketing APAC team. For questions or contributions, please contact the development team.
-
-## License
-
-Internal use only - YouTube Marketing APAC
+**Result**: 6 Firebase projects → 1 · ~80% cost reduction · Single domain
 
 ---
 
-**Maintained by**: YouTube Marketing APAC Team
-**Last Updated**: February 2026
+## Documentation
+
+For AI sessions: read **[CLAUDE.md](CLAUDE.md)** first.
+For all docs: see **[docs/README.md](docs/README.md)**.
+
+Key references:
+- [System Architecture](docs/architecture/TECHNICAL_DESIGN_DOCUMENT.md)
+- [Vertex AI Setup](docs/guides/VERTEX_AI_SETUP.md)
+- [Security Audit](docs/security/SECURITY_AUDIT_REPORT.md)
+- [Migration Summary](docs/migration/MIGRATION_SUMMARY.md)
+
+---
+
+**Team**: YouTube Marketing APAC (Gus · Marco · Dice)
+**Last Updated**: March 2026
