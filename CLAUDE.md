@@ -42,13 +42,22 @@ v3-creative-engine/
 ├── tools/                         # Source code for React apps (build → public/)
 │   ├── template-stamper/          # React + Vite + Remotion source
 │   │   ├── src/                   # Frontend source
-│   │   ├── functions/src/         # Tool-specific functions (synced to functions/)
+│   │   ├── functions/src/         # ⚠️ LEGACY — see note below
+│   │   ├── remotion-templates/    # Remotion rendering config (Docker + Cloud Run)
+│   │   ├── templates/             # Asset slot schema JSON files
+│   │   ├── scripts/               # Backup scripts
 │   │   ├── docs/                  # Tool-specific documentation
-│   │   └── remotion-templates/    # Remotion rendering config
-│   └── shorts-intel-hub/
-│       ├── frontend/src/          # React/TypeScript frontend source
-│       ├── backend/functions/src/ # Tool-specific functions (synced to functions/)
-│       └── docs/                  # Tool-specific documentation
+│   │   ├── firebase.json          # ⚠️ LEGACY — standalone project remnant, ignore
+│   │   ├── firestore.rules        # ⚠️ LEGACY — use root firestore.rules instead
+│   │   └── storage.rules          # ⚠️ LEGACY — use root storage.rules instead
+│   ├── shorts-intel-hub/
+│   │   ├── frontend/src/          # React/TypeScript frontend source
+│   │   ├── backend/functions/src/ # Functions source (kept in sync with functions/)
+│   │   └── docs/                  # Tool-specific documentation
+│   ├── shorts-brain/              # React + Vite source
+│   │   └── src/                   # Builds to public/shorts-brain/
+│   └── public/                    # ⚠️ STALE — old Shorts Intel Hub build output
+│                                  #    (vite.config was fixed; safe to delete)
 │
 ├── docs/                          # All project documentation (organized)
 │   ├── README.md                  # Documentation index
@@ -59,7 +68,11 @@ v3-creative-engine/
 │   ├── team/                      # Team-specific task lists
 │   └── migration/                 # Migration & consolidation history
 │
-├── scripts/                       # Utility shell scripts (backup, setup)
+├── scripts/                       # Utility shell scripts (Firestore/Storage backup)
+├── _backups/                      # Local backup records (phase completion notes)
+├── check-jobs.js                  # Ad-hoc script: query Cloud Functions job status
+├── ytm-agent-collective-v3.html   # Standalone Agent Collective demo (reference)
+├── ytm-agent-collective-test.html # Standalone Agent Collective test page
 ├── firebase.json                  # Firebase Hosting rewrites + Functions config
 ├── firestore.rules                # Firestore security rules (ALL tools)
 ├── firestore.indexes.json         # Firestore composite indexes
@@ -72,14 +85,14 @@ v3-creative-engine/
 
 ## The 6 Tools
 
-| Tool | Frontend | Functions prefix | Key Firestore collection |
-|---|---|---|---|
-| Creative Generator | `public/creative-generator/` | (no prefix) | `jobs/` |
-| Agent Collective | `public/agent-collective/` | `callGeminiAgent` | — |
-| Template Stamper | `public/template-stamper/` | `ts*` | `template-stamper-jobs/` |
-| Shorts Intel Hub | `public/shorts-intel-hub/` | `shortsIntel*` | `shorts-intel/` |
-| Shorts Brain | `public/shorts-brain/` | `sb*` | `shorts-brain/` |
-| Campaign Learnings | (future) | — | — |
+| Tool | Frontend (deployed) | Source | Functions prefix | Key Firestore collection |
+|---|---|---|---|---|
+| Creative Generator | `public/creative-generator/` | (vanilla, edit in place) | (no prefix) | `jobs/` |
+| Agent Collective | `public/agent-collective/` | (vanilla, edit in place) | `callGeminiAgent` | — |
+| Template Stamper | `public/template-stamper/` | `tools/template-stamper/` | `ts*` | `template-stamper-jobs/` |
+| Shorts Intel Hub | `public/shorts-intel-hub/` | `tools/shorts-intel-hub/frontend/` | `shortsIntel*` | `shorts-intel/` |
+| Shorts Brain | `public/shorts-brain/` | `tools/shorts-brain/` | `sb*` | `shorts-brain/` |
+| Campaign Learnings | (future) | — | — | — |
 
 ### Creative Generator
 - Generates images (Imagen 3) and videos (Veo) via Vertex AI
@@ -121,11 +134,15 @@ firebase deploy --only storage:rules     # Storage rules only
 ```bash
 # Template Stamper
 cd tools/template-stamper && npm run build
-# Output goes to public/template-stamper/
+# Output → public/template-stamper/
 
 # Shorts Intel Hub
 cd tools/shorts-intel-hub/frontend && npm run build
-# Output goes to public/shorts-intel-hub/
+# Output → public/shorts-intel-hub/
+
+# Shorts Brain
+cd tools/shorts-brain && npm run build
+# Output → public/shorts-brain/
 ```
 
 ### Local Development
@@ -178,6 +195,12 @@ Cloud Shell is the fastest way to test against the live GCP project without a lo
 ---
 
 ## Architecture Patterns
+
+### Template Stamper Functions — Sync Warning
+
+`tools/template-stamper/functions/src/` and `functions/src/template-stamper/` are **manually kept in sync** — they are copies, not symlinks. The deployed version is `functions/src/template-stamper/` and it has diverged (newer fixes applied directly there). **Always edit `functions/src/template-stamper/` for backend changes.** If you also need to update the tools/ source, apply the same change there manually.
+
+The same pattern applies to Shorts Intel Hub: `tools/shorts-intel-hub/backend/functions/src/` mirrors `functions/src/shorts-intel-hub/`. These are currently in sync, but the same caution applies — always treat `functions/src/` as the canonical deployed source.
 
 ### ES Module Compatibility
 Cloud Functions uses CommonJS (`require`). The React tools (Template Stamper, Shorts Intel Hub) use TypeScript ES modules. The bridge pattern wraps them:

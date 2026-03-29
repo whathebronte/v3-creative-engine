@@ -44,8 +44,9 @@ v3-creative-engine/
 │       └── template-stamper-wrapper.js   # ES module compatibility bridge
 │
 ├── tools/                         # Source for React apps (build → public/)
-│   ├── template-stamper/          # React + Vite + Remotion source
-│   └── shorts-intel-hub/          # React + TypeScript source
+│   ├── template-stamper/          # React + Vite + Remotion source → public/template-stamper/
+│   ├── shorts-intel-hub/          # React + TypeScript source → public/shorts-intel-hub/
+│   └── shorts-brain/              # React + Vite source → public/shorts-brain/
 │
 ├── docs/                          # All documentation (see docs/README.md)
 │   ├── README.md                  # Documentation index
@@ -106,8 +107,9 @@ cd tools/shorts-intel-hub/frontend && npm install
 
 ### Build React Apps
 ```bash
-cd tools/template-stamper && npm run build        # → public/template-stamper/
+cd tools/template-stamper && npm run build           # → public/template-stamper/
 cd tools/shorts-intel-hub/frontend && npm run build  # → public/shorts-intel-hub/
+cd tools/shorts-brain && npm run build               # → public/shorts-brain/
 ```
 
 ### Local Development
