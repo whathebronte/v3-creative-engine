@@ -37,8 +37,16 @@
         "destination": "/shorts-brain/index.html"
       },
       {
+        "source": "/agent-collective-v2/**",
+        "destination": "/agent-collective-v2/index.html"
+      },
+      {
         "source": "/agent-collective/**",
         "destination": "/agent-collective/index.html"
+      },
+      {
+        "source": "/creative-generator-v2/**",
+        "destination": "/creative-generator-v2/index.html"
       },
       {
         "source": "/creative-generator/**",

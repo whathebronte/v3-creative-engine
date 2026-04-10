@@ -74,6 +74,19 @@ service cloud.firestore {
       allow create: if true;
     }
 
+    // Agent Collective V2 - Chat archives (ADK pipeline)
+    match /chat_archives_v2/{archiveId} {
+      allow read: if true;
+      allow create: if true;
+      allow delete: if true;
+    }
+
+    // Agent Collective V2 - Prompt/manifest transfers
+    match /prompt_transfers_v2/{transferId} {
+      allow read: if true;
+      allow create: if true;
+    }
+
     // ========================================================================
     // SHORTS BRAIN
     // ========================================================================

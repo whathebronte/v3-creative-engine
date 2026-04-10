@@ -73,6 +73,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "chat_archives_v2",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "market",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "savedAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -1782,13 +1782,14 @@ function showTemporaryMessage(buttonId, message, duration = 2000) {
 // ============================================================================
 
 /**
- * Check URL parameters for imported prompt from MCP Bridge
- * Called on page load to auto-populate prompt field
+ * Check URL parameters for imported prompt / transfer from MCP Bridge
+ * Called on page load to auto-populate prompt field or load full transfer
  */
 function checkForImportedPrompt() {
   const urlParams = new URLSearchParams(window.location.search);
   const importedPrompt = urlParams.get('prompt');
   const importedMarket = urlParams.get('market');
+  const transferId = urlParams.get('transfer');
 
   // Auto-switch to imported market if provided
   if (importedMarket) {
@@ -1797,28 +1798,131 @@ function checkForImportedPrompt() {
     showImportToast(`Switched to ${importedMarket.toUpperCase()} market`);
   }
 
-  if (importedPrompt) {
+  // Full transfer from Agent Collective V2 (manifest + creative package)
+  if (transferId) {
+    console.log(`[YTM Generator] Loading transfer: ${transferId}`);
+    loadTransfer(transferId);
+  } else if (importedPrompt) {
+    // Legacy: single prompt import
     console.log('[YTM Generator] Imported prompt from MCP Bridge');
-
-    // Decode and populate the prompt input
     const decodedPrompt = decodeURIComponent(importedPrompt);
     const promptInput = document.getElementById('promptInput');
-
     if (promptInput) {
       promptInput.value = decodedPrompt;
       state.currentPrompt = decodedPrompt;
-
-      // Show success toast
       showImportToast('Prompt imported from YTM Agent Collective');
-
-      console.log(`[YTM Generator] Prompt imported: "${decodedPrompt.substring(0, 50)}..."`);
     }
   }
 
-  // Clean the URL (remove the parameters)
-  if (importedPrompt || importedMarket) {
+  // Clean the URL
+  if (importedPrompt || importedMarket || transferId) {
     const cleanUrl = window.location.origin + window.location.pathname;
     window.history.replaceState({}, document.title, cleanUrl);
+  }
+}
+
+/**
+ * Load a full transfer from Firestore (manifest + creative package)
+ */
+async function loadTransfer(transferId) {
+  try {
+    const doc = await db.collection('prompt_transfers_v2').doc(transferId).get();
+    if (!doc.exists) {
+      console.warn('[YTM Generator] Transfer not found:', transferId);
+      showImportToast('Transfer not found');
+      return;
+    }
+
+    const data = doc.data();
+    const manifest = data.manifest || {};
+    const creativePackage = data.creativePackage || null;
+    const jobs = manifest.jobs || [];
+
+    if (!jobs.length) {
+      showImportToast('Transfer received but no jobs found in manifest');
+      return;
+    }
+
+    // Store in state
+    state.transferManifest = manifest;
+    state.transferCreativePackage = creativePackage;
+    state.transferJobs = jobs;
+
+    // Build the transfer queue UI
+    const queueEl = document.getElementById('transferQueue');
+    const listEl = document.getElementById('transferJobList');
+    const cpContent = document.getElementById('creativePackageContent');
+    const cpPanel = document.getElementById('creativePackagePanel');
+    const cpToggle = document.getElementById('toggleCreativePackage');
+    const dismissBtn = document.getElementById('dismissTransfer');
+
+    listEl.innerHTML = '';
+    jobs.forEach((job, i) => {
+      const item = document.createElement('div');
+      item.className = 'transfer-job-item';
+      item.dataset.index = i;
+
+      const label = document.createElement('div');
+      label.className = 'transfer-job-label';
+      label.textContent = job.deliverable_id || job.scene_id || `Job ${i + 1}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'transfer-job-meta';
+      meta.textContent = (job.prompt || '').substring(0, 60) + (job.prompt?.length > 60 ? '...' : '');
+
+      item.appendChild(label);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        // Load this job's prompt into the prompt field
+        const promptInput = document.getElementById('promptInput');
+        if (promptInput && job.prompt) {
+          promptInput.value = job.prompt;
+          state.currentPrompt = job.prompt;
+        }
+        // Mark active
+        listEl.querySelectorAll('.transfer-job-item').forEach(el => el.classList.remove('active'));
+        item.classList.add('active');
+      });
+
+      listEl.appendChild(item);
+    });
+
+    // Creative package panel
+    if (creativePackage) {
+      cpContent.textContent = creativePackage;
+      cpToggle.style.display = '';
+    } else {
+      cpToggle.style.display = 'none';
+    }
+
+    cpToggle.addEventListener('click', () => {
+      const showing = cpPanel.style.display !== 'none';
+      cpPanel.style.display = showing ? 'none' : '';
+      cpToggle.classList.toggle('active', !showing);
+    });
+
+    dismissBtn.addEventListener('click', () => {
+      queueEl.style.display = 'none';
+    });
+
+    // Show queue and auto-load first job
+    queueEl.style.display = '';
+    if (jobs[0]) {
+      const promptInput = document.getElementById('promptInput');
+      if (promptInput && jobs[0].prompt) {
+        promptInput.value = jobs[0].prompt;
+        state.currentPrompt = jobs[0].prompt;
+      }
+      listEl.querySelector('.transfer-job-item')?.classList.add('active');
+    }
+
+    showImportToast(`Pipeline transfer loaded: ${jobs.length} job${jobs.length > 1 ? 's' : ''}`);
+    console.log(`[YTM Generator] Transfer loaded: ${jobs.length} jobs, creative package: ${creativePackage ? 'yes' : 'no'}`);
+
+  } catch (err) {
+    console.error('[YTM Generator] Failed to load transfer:', err);
+    showImportToast('Failed to load transfer');
   }
 }
 

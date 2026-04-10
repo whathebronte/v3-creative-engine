@@ -1,0 +1,7 @@
+.git
+.venv
+__pycache__
+*.pyc
+agent_collective/outputs/
+agent_collective/.env
+.adk/

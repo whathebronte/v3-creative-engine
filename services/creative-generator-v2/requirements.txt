@@ -1,0 +1,7 @@
+google-adk==1.28.0
+fastapi
+uvicorn
+httpx
+python-multipart
+google-cloud-storage
+google-auth
