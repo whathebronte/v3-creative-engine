@@ -6,7 +6,7 @@ export const FIREBASE_CONFIG = {
   projectId: 'v3-creative-engine',
   storageBucket: 'v3-creative-engine.firebasestorage.app',
   messagingSenderId: '964100659393',
-  appId: '1:964100659393:web:v3creativeengine',
+  appId: '1:964100659393:web:bc6aa41fce9a8770d55c40',
 };
 
 export const MARKETS = [

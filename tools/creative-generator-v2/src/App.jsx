@@ -144,6 +144,14 @@ export default function App() {
     }
   }
 
+  // Stop polling helper (defined first since pollStatus references it)
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
   // Poll session status from backend
   const pollStatus = useCallback(async (sid) => {
     if (!sid) return;
@@ -156,22 +164,23 @@ export default function App() {
         setJobStatus(status.job_status);
       }
     } catch (e) {
-      console.warn('Status poll failed:', e);
+      // Session expired (404) — stop polling and clear session
+      if (e.message?.includes('404') || e.message?.includes('Not Found')) {
+        console.warn('Session expired, stopping poll');
+        stopPolling();
+        setSessionId(null);
+        setError('Backend session expired. Click a run or reload the manifest to reconnect.');
+      } else {
+        console.warn('Status poll failed:', e);
+      }
     }
-  }, []);
+  }, [stopPolling]);
 
-  // Start/stop polling
+  // Start polling
   const startPolling = useCallback((sid) => {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(() => pollStatus(sid), 3000);
   }, [pollStatus]);
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  }, []);
 
   useEffect(() => {
     return () => stopPolling();
