@@ -19,13 +19,19 @@ interface Trend {
   score: number;
   velocity: 'increasing' | 'stable' | 'decreasing';
   ageInWeeks: number;
-  source: 'Search' | 'Nyan Cat' | 'Agency' | 'Music';
+  source: 'Search' | 'Nyan Cat' | 'Vayner' | 'Agency' | 'Music';
   // Performance metrics
   viewsVolume?: string;
   viewsVelocity?: string;
   creationRate?: string;
   watchtimeVolume?: string;
   watchtimeVelocity?: string;
+  // Quality & safety
+  contentQuality?: 'good' | 'potentiallyAISlop' | 'aiSlop';
+  brandSafe?: boolean;
+  sentiment?: 'positive' | 'neutral' | 'negative' | 'mixed';
+  hidden?: boolean;
+  hiddenReason?: string;
 }
 
 // Mock data for different markets and demos
@@ -507,14 +513,18 @@ export function MarketingDashboard() {
   const [selectedMarket, setSelectedMarket] = useState('JP');
   const [selectedDemo, setSelectedDemo] = useState('All Demographics');
   const [showLongTail, setShowLongTail] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   const [approvedTrends, setApprovedTrends] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'summary' | 'deepdive' | 'scoring' | 'archive'>('summary');
   const [selectedSource, setSelectedSource] = useState('All Sources');
 
   const trends = mockTrends[selectedMarket] || [];
-  const filteredTrends = selectedDemo === 'All Demographics' 
-    ? trends 
+  const demoFiltered = selectedDemo === 'All Demographics'
+    ? trends
     : trends.filter(t => t.targetDemo === selectedDemo || t.targetDemo.startsWith('All'));
+
+  const filteredTrends = showHidden ? demoFiltered : demoFiltered.filter(t => !t.hidden);
+  const hiddenCount = demoFiltered.filter(t => t.hidden).length;
 
   const top10 = filteredTrends.filter(t => t.rank <= 10);
   const longTail = filteredTrends.filter(t => t.rank > 10);
@@ -559,6 +569,25 @@ export function MarketingDashboard() {
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {activeTab === 'summary' && (
+              <div className="flex-shrink-0 flex items-end">
+                <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card cursor-pointer hover:border-primary/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={showHidden}
+                    onChange={(e) => setShowHidden(e.target.checked)}
+                    className="size-4 rounded border-border"
+                  />
+                  <span className="text-sm text-foreground">
+                    Show hidden trends
+                    {hiddenCount > 0 && (
+                      <span className="ml-1 text-muted-foreground">({hiddenCount})</span>
+                    )}
+                  </span>
+                </label>
               </div>
             )}
           </div>

@@ -7,6 +7,32 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
+import { processUpload } from '../ingestion/upload.js';
+import { DEFAULT_SCORING_CONFIG } from '../ranking/calculate.js';
+
+// In-memory scoring config store. Replace with Firestore persistence in
+// production; holds the latest full ERS config globally.
+let currentScoringConfig = JSON.parse(JSON.stringify(DEFAULT_SCORING_CONFIG));
+
+// Deep-merge an incoming ERS config over the defaults. Only numeric leaves
+// are replaced; unknown keys are dropped to keep the shape predictable.
+function mergeConfig(defaults, incoming) {
+  const out = Array.isArray(defaults) ? [...defaults] : { ...defaults };
+  if (!incoming || typeof incoming !== 'object') return out;
+  for (const key of Object.keys(defaults)) {
+    const dv = defaults[key];
+    const iv = incoming[key];
+    if (iv === undefined) continue;
+    if (typeof dv === 'object' && dv !== null && !Array.isArray(dv)) {
+      out[key] = mergeConfig(dv, iv);
+    } else if (typeof dv === 'number' && typeof iv === 'number' && Number.isFinite(iv)) {
+      out[key] = iv;
+    } else if (typeof dv === 'boolean' && typeof iv === 'boolean') {
+      out[key] = iv;
+    }
+  }
+  return out;
+}
 
 // Rate limiters
 const standardLimiter = rateLimit({
@@ -182,26 +208,32 @@ export function setupRoutes(app) {
     '/upload',
     uploadLimiter,
     [
-      body('source').isIn(['agency', 'music']),
-      body('market').optional().isIn(['JP', 'KR', 'IN', 'ID', 'AUNZ']),
       body('filename').isString(),
-      body('content').isString(), // Base64 encoded file content
+      body('content').isString(), // Base64 encoded CSV
+      body('source').optional().isString(),
+      body('market').optional().isIn(['JP', 'KR', 'IN', 'ID', 'AUNZ']),
       validate
     ],
     async (req, res, next) => {
       try {
-        // TODO: Implement upload logic
-        // 1. Save to Cloud Storage
-        // 2. Parse file content
-        // 3. Queue for processing
+        const { content, filename } = req.body;
+        let csvText;
+        try {
+          csvText = Buffer.from(content, 'base64').toString('utf8');
+        } catch {
+          csvText = content; // Fallback: assume raw text
+        }
+
+        const result = processUpload(csvText, currentScoringConfig);
         res.json({
           success: true,
-          uploadId: 'temp-uuid',
-          filename: req.body.filename,
-          status: 'uploaded'
+          filename,
+          format: result.format,
+          stats: result.stats,
+          trends: result.trends
         });
       } catch (error) {
-        next(error);
+        res.status(400).json({ error: { message: error.message } });
       }
     }
   );
@@ -242,74 +274,32 @@ export function setupRoutes(app) {
 
   /**
    * GET /ranking/configs
-   * Get ranking configurations
+   * Get the current ERS ranking configuration.
    */
-  router.get(
-    '/ranking/configs',
-    standardLimiter,
-    [
-      query('market').optional().isIn(['JP', 'KR', 'IN', 'ID', 'AUNZ']),
-      query('gender').optional().isIn(['male', 'female']),
-      query('age').optional().isIn(['18-24', '25-34', '35-44']),
-      validate
-    ],
-    async (req, res, next) => {
-      try {
-        // TODO: Implement config fetching
-        res.json({
-          configs: []
-        });
-      } catch (error) {
-        next(error);
-      }
+  router.get('/ranking/configs', standardLimiter, async (_req, res, next) => {
+    try {
+      res.json({ config: currentScoringConfig, default: DEFAULT_SCORING_CONFIG });
+    } catch (error) {
+      next(error);
     }
-  );
+  });
 
   /**
    * PUT /ranking/configs
-   * Update ranking configuration weights
+   * Replace the full ERS config. Validates shape and numeric ranges.
    */
   router.put(
     '/ranking/configs',
     standardLimiter,
-    [
-      body('market').isIn(['JP', 'KR', 'IN', 'ID', 'AUNZ']),
-      body('gender').isIn(['male', 'female']),
-      body('age').isIn(['18-24', '25-34', '35-44']),
-      body('velocityWeight').isFloat({ min: 0, max: 1 }),
-      body('creationRateWeight').isFloat({ min: 0, max: 1 }),
-      body('watchtimeWeight').isFloat({ min: 0, max: 1 }),
-      body('updatedBy').isEmail(),
-      validate
-    ],
+    [body('config').isObject(), validate],
     async (req, res, next) => {
       try {
-        // Validate weights sum to 1.0
-        const sum = req.body.velocityWeight + req.body.creationRateWeight + req.body.watchtimeWeight;
-        if (Math.abs(sum - 1.0) > 0.01) {
-          return res.status(400).json({
-            error: 'Weights must sum to 1.0'
-          });
-        }
-
-        // TODO: Implement config update logic
-        res.json({
-          success: true,
-          config: {
-            market: req.body.market,
-            demographic: {
-              gender: req.body.gender,
-              age: req.body.age
-            },
-            weights: {
-              velocity: req.body.velocityWeight,
-              creationRate: req.body.creationRateWeight,
-              watchtime: req.body.watchtimeWeight
-            }
-          }
-        });
+        const incoming = req.body.config;
+        const merged = mergeConfig(DEFAULT_SCORING_CONFIG, incoming);
+        currentScoringConfig = merged;
+        res.json({ success: true, config: merged });
       } catch (error) {
-        next(error);
+        res.status(400).json({ error: { message: error.message } });
       }
     }
   );

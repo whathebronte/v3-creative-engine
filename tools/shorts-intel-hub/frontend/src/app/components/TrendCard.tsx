@@ -1,4 +1,4 @@
-import { ExternalLink, TrendingUp, TrendingDown, Minus, CheckCircle2, Clock, Music, Hash } from 'lucide-react';
+import { ExternalLink, TrendingUp, TrendingDown, Minus, CheckCircle2, Clock, Music, Hash, EyeOff, AlertTriangle } from 'lucide-react';
 
 interface Trend {
   id: string;
@@ -12,7 +12,12 @@ interface Trend {
   score: number;
   velocity: 'increasing' | 'stable' | 'decreasing';
   ageInWeeks: number;
-  source: 'Search' | 'Nyan Cat' | 'Agency' | 'Music';
+  source: 'Search' | 'Nyan Cat' | 'Vayner' | 'Agency' | 'Music';
+  contentQuality?: 'good' | 'potentiallyAISlop' | 'aiSlop';
+  brandSafe?: boolean;
+  sentiment?: 'positive' | 'neutral' | 'negative' | 'mixed';
+  hidden?: boolean;
+  hiddenReason?: string;
 }
 
 interface TrendCardProps {
@@ -56,6 +61,8 @@ export function TrendCard({ trend, onApprove, isApproved }: TrendCardProps) {
         return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
       case 'Nyan Cat':
         return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
+      case 'Vayner':
+        return 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
       case 'Agency':
         return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
       case 'Music':
@@ -66,9 +73,11 @@ export function TrendCard({ trend, onApprove, isApproved }: TrendCardProps) {
   };
 
   const isExpiring = trend.ageInWeeks >= 3;
+  const needsReview = trend.contentQuality === 'potentiallyAISlop';
 
   return (
     <div className={`bg-card border rounded-lg p-5 transition-all ${
+      trend.hidden ? 'border-dashed border-muted-foreground/40 opacity-70' :
       isApproved ? 'border-green-500 bg-green-50/50' : 'border-border hover:border-primary/50'
     }`}>
       <div className="flex gap-4">
@@ -92,6 +101,18 @@ export function TrendCard({ trend, onApprove, isApproved }: TrendCardProps) {
                 <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground">
                   {trend.targetDemo}
                 </span>
+                {needsReview && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                    <AlertTriangle className="size-3" />
+                    For quality review
+                  </span>
+                )}
+                {trend.hidden && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/30">
+                    <EyeOff className="size-3" />
+                    Hidden{trend.hiddenReason ? `: ${trend.hiddenReason}` : ''}
+                  </span>
+                )}
                 <div className="flex items-center gap-1 text-muted-foreground">
                   {getVelocityIcon()}
                   <span>{getVelocityLabel()}</span>

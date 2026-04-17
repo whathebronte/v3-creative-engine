@@ -213,6 +213,25 @@ export async function updateScoringSettings(
 }
 
 // ============================================================================
+// ERS CONFIG API (full scoring config)
+// ============================================================================
+
+import type { ScoringConfig } from '@/types';
+
+export async function getRankingConfig(): Promise<{ config: ScoringConfig; default: ScoringConfig }> {
+  return apiFetch<{ config: ScoringConfig; default: ScoringConfig }>(`/ranking/configs`);
+}
+
+export async function updateRankingConfig(
+  config: ScoringConfig
+): Promise<{ success: boolean; config: ScoringConfig }> {
+  return apiFetch(`/ranking/configs`, {
+    method: 'PUT',
+    body: JSON.stringify({ config }),
+  });
+}
+
+// ============================================================================
 // AGENCY UPLOAD API
 // ============================================================================
 
@@ -225,6 +244,44 @@ export async function submitAgencyUpload(
   return apiFetch(`/agency-upload`, {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+export interface CsvUploadResponse {
+  success: boolean;
+  filename: string;
+  format: 'vayner' | 'nyancat' | 'unknown';
+  stats: {
+    total: number;
+    visible: number;
+    hidden: number;
+    forQualityReview: number;
+  };
+  trends: Trend[];
+}
+
+/**
+ * Upload a Vayner or Nyan Cat CSV file. Server auto-detects format.
+ */
+export async function uploadCsvFile(file: File): Promise<CsvUploadResponse> {
+  const content = await fileToBase64(file);
+  return apiFetch<CsvUploadResponse>(`/upload`, {
+    method: 'POST',
+    body: JSON.stringify({ filename: file.name, content }),
+  });
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip data:...;base64, prefix
+      const idx = result.indexOf(',');
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
   });
 }
 
