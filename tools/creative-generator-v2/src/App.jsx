@@ -164,12 +164,11 @@ export default function App() {
         setJobStatus(status.job_status);
       }
     } catch (e) {
-      // Session expired (404) — stop polling and clear session
-      if (e.message?.includes('404') || e.message?.includes('Not Found')) {
-        console.warn('Session expired, stopping poll');
+      // Session expired (404) — stop polling and clear session so ensureSession reconnects
+      if (e.message?.includes('404')) {
+        console.warn('Session expired, clearing for auto-reconnect');
         stopPolling();
         setSessionId(null);
-        setError('Backend session expired. Click a run or reload the manifest to reconnect.');
       } else {
         console.warn('Status poll failed:', e);
       }
@@ -243,6 +242,29 @@ export default function App() {
     }
   }, [pollStatus, startPolling, creativePackage]);
 
+  // Auto-reconnect: create a fresh backend session from current manifest
+  const ensureSession = useCallback(async () => {
+    if (sessionId) return sessionId;
+    if (!manifest) return null;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const marketCode = manifest.market || 'kr';
+      const { session_id } = await api.createSession(marketCode, creativePackage);
+      setSessionId(session_id);
+      await api.loadManifest(session_id, manifest);
+      startPolling(session_id);
+      return session_id;
+    } catch (e) {
+      console.error('Session reconnect failed:', e);
+      setError(`Session reconnect failed: ${e.message}`);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId, manifest, creativePackage, startPolling]);
+
   // Generate a reference image via backend
   const handleGenerateRef = useCallback(async (refId) => {
     setRefStatus((prev) => ({
@@ -250,10 +272,11 @@ export default function App() {
       [refId]: { ...prev[refId], status: 'running' },
     }));
 
-    if (sessionId) {
+    const sid = await ensureSession();
+    if (sid) {
       try {
-        await api.generateRef(sessionId, refId);
-        await pollStatus(sessionId);
+        await api.generateRef(sid, refId);
+        await pollStatus(sid);
       } catch (e) {
         console.error(`Ref generation failed for ${refId}:`, e);
         setRefStatus((prev) => ({
@@ -262,14 +285,13 @@ export default function App() {
         }));
       }
     } else {
-      console.warn(`No backend session for ref ${refId}, cannot generate`);
-      setError('No backend session. Reload the manifest to create a session.');
+      setError('Could not connect to backend. Try again.');
       setRefStatus((prev) => ({
         ...prev,
         [refId]: { status: 'failed', gcs_uri: null },
       }));
     }
-  }, [sessionId, pollStatus]);
+  }, [ensureSession, pollStatus]);
 
   const handleGenerateAllRefs = useCallback(() => {
     if (!manifest) return;
@@ -287,10 +309,11 @@ export default function App() {
       [jobId]: { ...prev[jobId], status: 'running' },
     }));
 
-    if (sessionId) {
+    const sid = await ensureSession();
+    if (sid) {
       try {
-        await api.generateJob(sessionId, jobId);
-        await pollStatus(sessionId);
+        await api.generateJob(sid, jobId);
+        await pollStatus(sid);
       } catch (e) {
         console.error(`Job generation failed for ${jobId}:`, e);
         setError(`Job ${jobId} failed: ${e.message}`);
@@ -300,15 +323,13 @@ export default function App() {
         }));
       }
     } else {
-      // No backend session — show error instead of silent mock
-      console.warn(`No backend session for job ${jobId}, cannot generate`);
-      setError('No backend session. Reload the manifest to create a session.');
+      setError('Could not connect to backend. Try again.');
       setJobStatus((prev) => ({
         ...prev,
         [jobId]: { status: 'failed', gcs_uri: null },
       }));
     }
-  }, [sessionId, pollStatus]);
+  }, [ensureSession, pollStatus]);
 
   // Archive: restore a run — re-creates a backend session so generation works
   const handleSelectRun = useCallback(async (runId) => {

@@ -20,7 +20,7 @@ export async function createSession(market = 'kr', creativePackage = null) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!resp.ok) throw new Error(`Session creation failed: ${resp.statusText}`);
+  if (!resp.ok) throw new Error(`Session creation failed: ${resp.status}`);
   return resp.json(); // { session_id }
 }
 
@@ -36,7 +36,7 @@ export async function loadManifest(sessionId, manifestJson) {
       manifest_json: typeof manifestJson === 'string' ? manifestJson : JSON.stringify(manifestJson),
     }),
   });
-  if (!resp.ok) throw new Error(`Manifest load failed: ${resp.statusText}`);
+  if (!resp.ok) throw new Error(`Manifest load failed: ${resp.status}`);
   return resp.json();
 }
 
@@ -52,7 +52,7 @@ export async function validateManifest(manifestJson) {
       manifest_json: typeof manifestJson === 'string' ? manifestJson : JSON.stringify(manifestJson),
     }),
   });
-  if (!resp.ok) throw new Error(`Validation failed: ${resp.statusText}`);
+  if (!resp.ok) throw new Error(`Validation failed: ${resp.status}`);
   return resp.json();
 }
 
@@ -66,7 +66,7 @@ export async function generateRef(sessionId, refId = '') {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_id: sessionId, ref_id: refId }),
   });
-  if (!resp.ok) throw new Error(`Ref generation failed: ${resp.statusText}`);
+  if (!resp.ok) throw new Error(`Ref generation failed: ${resp.status}`);
   return resp.json();
 }
 
@@ -79,7 +79,7 @@ export async function generateJob(sessionId, jobId) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_id: sessionId, job_id: jobId }),
   });
-  if (!resp.ok) throw new Error(`Job generation failed: ${resp.statusText}`);
+  if (!resp.ok) throw new Error(`Job generation failed: ${resp.status}`);
   return resp.json();
 }
 
@@ -88,7 +88,7 @@ export async function generateJob(sessionId, jobId) {
  */
 export async function getStatus(sessionId) {
   const resp = await fetch(`${API_BASE}/api/status/${sessionId}`);
-  if (!resp.ok) throw new Error(`Status fetch failed: ${resp.statusText}`);
+  if (!resp.ok) throw new Error(`Status fetch failed: ${resp.status}`);
   return resp.json();
 }
 
@@ -106,7 +106,7 @@ export function streamRun(sessionId, message, onEvent, onDone, onError) {
     signal: controller.signal,
   })
     .then(async (resp) => {
-      if (!resp.ok) throw new Error(`Stream failed: ${resp.statusText}`);
+      if (!resp.ok) throw new Error(`Stream failed: ${resp.status}`);
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
