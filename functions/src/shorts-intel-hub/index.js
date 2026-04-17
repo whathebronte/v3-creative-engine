@@ -21,6 +21,14 @@ app.use(cors({ origin: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Strip hosting rewrite prefix so routes match regardless of inbound path
+app.use((req, _res, next) => {
+  if (req.url.startsWith('/shorts-intel-hub')) {
+    req.url = req.url.slice('/shorts-intel-hub'.length) || '/';
+  }
+  next();
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({
