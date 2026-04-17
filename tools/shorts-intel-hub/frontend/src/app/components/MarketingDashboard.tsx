@@ -4,6 +4,7 @@ import { StatsDashboard } from '@/app/components/StatsDashboard';
 import { DeepDiveView } from '@/app/components/DeepDiveView';
 import { ScoringSettings } from '@/app/components/ScoringSettings';
 import { ArchiveView } from '@/app/components/ArchiveView';
+import { ThreeTrackView } from '@/app/components/ThreeTrackView';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 // Mock data structure
@@ -663,16 +664,19 @@ export function MarketingDashboard() {
         {/* Tab Content */}
         {activeTab === 'summary' ? (
           <>
-            {/* Last Updated Info */}
+            {/* Three-track: Matching / Internal / External */}
+            <ThreeTrackView />
+
+            {/* Demo Top 10 (mock data fallback — until live trends API is wired up) */}
             <div className="mb-6 p-4 bg-muted rounded-lg">
-              <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Last Updated:</span> Monday, January 13, 2026 at 06:00 AM JST
+              <p className="text-muted-foreground text-sm">
+                <span className="font-medium text-foreground">Demo data below:</span> preview of the
+                single-list view using mock trends for {selectedMarket}. Replaced by the three-track view above once you run matching.
               </p>
             </div>
 
-            {/* Top 10 Section */}
             <div className="mb-8">
-              <h2 className="text-foreground mb-4">Top 10 Trends - {selectedMarket}</h2>
+              <h2 className="text-foreground mb-4">Top 10 Trends - {selectedMarket} (demo)</h2>
               {top10.length === 0 ? (
                 <div className="p-8 text-center bg-card rounded-lg border border-border">
                   <p className="text-muted-foreground">No trends found for selected filters</p>

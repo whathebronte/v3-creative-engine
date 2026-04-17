@@ -7,7 +7,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
-import { processUpload } from '../ingestion/upload.js';
+import { processUpload, processBatch } from '../ingestion/upload.js';
 import { DEFAULT_SCORING_CONFIG } from '../ranking/calculate.js';
 
 // In-memory scoring config store. Replace with Firestore persistence in
@@ -233,6 +233,40 @@ export function setupRoutes(app) {
           trends: result.trends
         });
       } catch (error) {
+        res.status(400).json({ error: { message: error.message } });
+      }
+    }
+  );
+
+  /**
+   * POST /match-and-rank
+   * Dual-CSV batch: accepts Nyan Cat + Vayner CSVs, runs two-stage topic
+   * matching, returns 3 ranked tracks (internal-only / matching / external-only).
+   */
+  router.post(
+    '/match-and-rank',
+    uploadLimiter,
+    [
+      body('nyanCatContent').optional().isString(),
+      body('vaynerContent').optional().isString(),
+      validate
+    ],
+    async (req, res) => {
+      try {
+        const { nyanCatContent, vaynerContent } = req.body;
+        const decode = (c) => {
+          if (!c) return null;
+          try { return Buffer.from(c, 'base64').toString('utf8'); }
+          catch { return c; }
+        };
+        const result = await processBatch({
+          nyanCatCsv: decode(nyanCatContent),
+          vaynerCsv: decode(vaynerContent),
+          config: currentScoringConfig,
+        });
+        res.json({ success: true, ...result });
+      } catch (error) {
+        console.error('[match-and-rank] error:', error);
         res.status(400).json({ error: { message: error.message } });
       }
     }

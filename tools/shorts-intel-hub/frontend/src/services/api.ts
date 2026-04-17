@@ -271,6 +271,49 @@ export async function uploadCsvFile(file: File): Promise<CsvUploadResponse> {
   });
 }
 
+export interface MatchPair {
+  internal: Trend;
+  external: Trend;
+  matchScore: number;
+  matchStage: 'keyword' | 'semantic';
+  combinedScore: number;
+  rank: number;
+}
+
+export interface MatchAndRankResponse {
+  success: boolean;
+  internal: Trend[];
+  matching: MatchPair[];
+  external: Trend[];
+  stats: {
+    internalParsed: number;
+    externalParsed: number;
+    matched: number;
+    matchedByKeyword: number;
+    matchedBySemantic: number;
+    internalOnly: number;
+    externalOnly: number;
+  };
+}
+
+/**
+ * Batch upload both Nyan Cat + Vayner CSVs, run two-stage topic matching,
+ * return 3 ranked tracks.
+ */
+export async function matchAndRank(
+  nyanCatFile: File | null,
+  vaynerFile: File | null
+): Promise<MatchAndRankResponse> {
+  const [nyanCatContent, vaynerContent] = await Promise.all([
+    nyanCatFile ? fileToBase64(nyanCatFile) : Promise.resolve(null),
+    vaynerFile ? fileToBase64(vaynerFile) : Promise.resolve(null),
+  ]);
+  return apiFetch<MatchAndRankResponse>(`/match-and-rank`, {
+    method: 'POST',
+    body: JSON.stringify({ nyanCatContent, vaynerContent }),
+  });
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
