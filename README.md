@@ -142,51 +142,47 @@ V1 Creative Generator, V1/V2 Agent Collective, and the hub are vanilla — no bu
 
 ---
 
-## Local Testing
+## Local Testing (Google Cloud Shell)
 
-### Option A — Firebase Emulators (recommended for Functions + Firestore + Storage)
+Cloud Shell is the default dev environment — `gcloud`, `node`, `npm`, and `firebase-tools` are pre-installed and auth inherits from the GCP session.
+
+**Open:** https://shell.cloud.google.com/?project=v3-creative-engine
+
+### 1. Clone + install
 ```bash
-firebase emulators:start
-# UI at http://localhost:4000, Functions at :5001, Firestore at :8080, Hosting at :5000
+git clone https://github.com/whathebronte/v3-creative-engine.git
+cd v3-creative-engine && cd functions && npm install && cd ..
+firebase login --no-localhost   # paste the auth code back
 ```
-Persist state between runs:
+
+### 2. Run the emulators
 ```bash
 firebase emulators:start --import=./emulator-data --export-on-exit
 ```
+- Use Cloud Shell's **Web Preview** on port **4000** for the Emulator UI (Firestore data, function logs, Storage).
+- Functions: `:5001` · Firestore: `:8080` · Hosting: `:5000` · Storage: `:9199`
+- `--import` / `--export-on-exit` persists test data across Cloud Shell sessions.
 
-### Option B — Per-tool Vite dev servers (frontend iteration)
+### 3. Iterate on a frontend (optional)
+For the React tools, run Vite alongside the emulators and point its API base at the emulated Functions or a deployed Cloud Run URL:
 ```bash
-cd tools/creative-generator-v2 && npm run dev
-cd tools/template-stamper && npm run dev
-cd tools/shorts-intel-hub/frontend && npm run dev
-cd tools/shorts-brain && npm run dev
+cd tools/creative-generator-v2 && npm install && npm run dev
+# Then Web Preview → change port to the Vite port printed in the terminal
 ```
-Set `VITE_API_BASE_URL` / `VITE_API_BASE` in each tool's `.env` to point at emulated Functions or a deployed Cloud Run URL.
+Set `VITE_API_BASE_URL` / `VITE_API_BASE` in the tool's `.env` as needed.
 
-### Option C — Cloud Run services locally
-```bash
-cd services/creative-generator-v2
-pip install -r requirements.txt
-uvicorn server.app:app --reload --port 8080
-
-cd services/agent-collective-v2
-pip install -r requirements.txt
-python -m agent_collective     # or use the demo_ui/ server
-```
-
-### Option D — Google Cloud Shell (zero local setup)
-1. Open https://shell.cloud.google.com/?project=v3-creative-engine
-2. `git clone https://github.com/whathebronte/v3-creative-engine.git && cd v3-creative-engine`
-3. `cd functions && npm install && cd ..`
-4. `firebase login --no-localhost` (paste the auth code back)
-5. `firebase emulators:start --only firestore,functions,storage`
-6. Open Cloud Shell **Web Preview** on port 4000 for the Emulator UI.
-
-Invoke a callable function directly:
+### 4. Hit a Cloud Function directly
 ```bash
 curl -s http://localhost:5001/v3-creative-engine/us-central1/createTestJob \
   -H "Content-Type: application/json" \
   -d '{"data": {"type": "image", "prompt": "test"}}'
+```
+
+### 5. Run a Cloud Run service locally (only if editing `services/`)
+```bash
+cd services/creative-generator-v2 && pip install -r requirements.txt
+uvicorn server.app:app --reload --port 8080
+# Web Preview on port 8080
 ```
 
 ---
