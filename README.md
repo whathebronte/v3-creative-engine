@@ -187,6 +187,56 @@ uvicorn server.app:app --reload --port 8080
 
 ---
 
+## Testing Agent Collective V2 Locally (non-dev friendly)
+
+This runs the full 38-agent pipeline on your Cloud Shell machine and gives you a browser UI to chat with it — no code changes needed.
+
+**One-time setup** (copy/paste each block in order):
+
+1. Open Cloud Shell: https://shell.cloud.google.com/?project=v3-creative-engine
+
+2. Clone the repo (skip if you already have it):
+   ```bash
+   git clone https://github.com/whathebronte/v3-creative-engine.git
+   cd v3-creative-engine
+   ```
+
+3. Go into the Agent Collective V2 service and create a Python sandbox:
+   ```bash
+   cd services/agent-collective-v2
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+   The `source .venv/bin/activate` line activates the sandbox — your prompt will show `(.venv)` in front. Run it again every time you open a new Cloud Shell tab.
+
+4. Set your Gemini API key (ask Marco or Gus if you don't have one):
+   ```bash
+   export GOOGLE_API_KEY="paste-your-key-here"
+   ```
+
+**Start the app** (do this every time):
+
+```bash
+cd ~/v3-creative-engine/services/agent-collective-v2
+source .venv/bin/activate
+uvicorn demo_ui.server:app --host 0.0.0.0 --port 8080
+```
+
+Leave that terminal running. You should see lines like `Uvicorn running on http://0.0.0.0:8080`.
+
+**Open the UI**: in Cloud Shell, click the **Web Preview** button (top right, looks like an eye / monitor icon) → **Preview on port 8080**. A browser tab opens with the Agent Collective demo UI. Type a brief and watch the agents work.
+
+**When you're done**: press `Ctrl+C` in the terminal to stop the server.
+
+**Troubleshooting**
+- *"command not found: uvicorn"* → you forgot `source .venv/bin/activate`. Run it and try again.
+- *Port 8080 already in use* → another process is running. Either close its terminal, or start on another port: `uvicorn demo_ui.server:app --host 0.0.0.0 --port 8081` (and preview port 8081).
+- *API key errors* → re-run the `export GOOGLE_API_KEY=...` line; it doesn't persist across sessions.
+- *Slow first run* → normal. Pip is downloading ~200 MB of ADK dependencies the first time.
+
+**Switching to the cheap model for testing** (recommended while iterating): open `services/agent-collective-v2/agent_collective/agent.py` in the Cloud Shell Editor and change `MODEL_PRO = "gemini-2.5-pro"` to `"gemini-2.5-flash"` (~$0.15/run instead of ~$2–3/run). Change it back before deploying.
+
 ## Deploying to Public Hosting
 
 ### Hosting (static + rewrites)
