@@ -12,7 +12,7 @@ interface Trend {
   score: number;
   velocity: 'increasing' | 'stable' | 'decreasing';
   ageInWeeks: number;
-  source: 'Search' | 'Nyan Cat' | 'Agency' | 'Music';
+  source: 'Search' | 'Nyan Cat' | 'Vayner' | 'Agency' | 'Music';
   // Performance metrics
   viewsVolume?: string;
   viewsVelocity?: string;
@@ -27,7 +27,7 @@ interface DeepDiveViewProps {
   onSourceChange: (source: string) => void;
 }
 
-const sources = ['All Sources', 'Search', 'Nyan Cat', 'Agency', 'Music'];
+const sources = ['All Sources', 'Search', 'Nyan Cat', 'Vayner', 'Agency', 'Music'];
 
 export function DeepDiveView({ trends, selectedSource, onSourceChange }: DeepDiveViewProps) {
   const filteredTrends = selectedSource === 'All Sources' 

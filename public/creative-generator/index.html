@@ -196,6 +196,21 @@
 
     </div>
 
+    <!-- Transfer Queue (shown when Agent Collective sends a manifest) -->
+    <div id="transferQueue" class="transfer-queue" style="display:none;">
+      <div class="transfer-queue-header">
+        <span class="transfer-queue-title">Agent Collective Pipeline Transfer</span>
+        <div class="transfer-queue-actions">
+          <button id="toggleCreativePackage" class="transfer-toggle-btn" title="View creative package context">Creative Package</button>
+          <button id="dismissTransfer" class="transfer-dismiss-btn" title="Dismiss">&times;</button>
+        </div>
+      </div>
+      <div id="transferJobList" class="transfer-job-list"></div>
+      <div id="creativePackagePanel" class="creative-package-panel" style="display:none;">
+        <pre id="creativePackageContent" class="creative-package-content"></pre>
+      </div>
+    </div>
+
     <!-- Bottom Prompt Area -->
     <div class="prompt-container">
       <label for="promptInput" class="prompt-label">Carried over prompt, editable</label>

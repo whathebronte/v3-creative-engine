@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Collective</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app">
+
+    <div class="header">
+      <h1>Agent Collective</h1>
+    </div>
+
+    <div class="body">
+
+      <div class="sidebar">
+        <div class="sidebar-section">
+          <span class="sidebar-label">Market</span>
+          <select class="market-select" id="marketSelect">
+            <option value="kr" selected>Korea</option>
+            <option value="in">India</option>
+            <option value="jp">Japan</option>
+            <option value="id">Indonesia</option>
+          </select>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+          <button class="kb-toggle" id="kbToggle" aria-expanded="false">
+            <span class="sidebar-label">Knowledge Base</span>
+            <svg class="kb-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <div class="kb-panel" id="kbPanel" hidden>
+
+            <div class="kb-group">
+              <div class="kb-group-header">
+                <span class="kb-group-label">Global</span>
+                <button class="kb-upload-btn" id="kbUploadGlobal" data-scope="global" title="Upload file">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2.5"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </button>
+              </div>
+              <ul class="kb-file-list" id="kbGlobalList"></ul>
+            </div>
+
+            <div class="kb-group">
+              <div class="kb-group-header">
+                <span class="kb-group-label" id="kbMarketLabel">Korea</span>
+                <button class="kb-upload-btn" id="kbUploadMarket" data-scope="kr" title="Upload file">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2.5"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </button>
+              </div>
+              <ul class="kb-file-list" id="kbMarketList"></ul>
+            </div>
+
+            <input type="file" id="kbFileInput" hidden accept=".md,.json">
+          </div>
+        </div>
+      </div>
+
+      <div class="main">
+
+        <div class="conversation" id="conversation">
+          <div class="conversation-inner" id="conversationInner">
+          </div>
+        </div>
+
+        <div class="file-preview" id="filePreview" hidden>
+          <span class="file-preview-name" id="filePreviewName"></span>
+          <button class="file-preview-remove" id="filePreviewRemove" title="Remove file">&times;</button>
+        </div>
+
+        <div class="input-bar" id="inputBar">
+          <div class="input-bar-inner">
+            <input type="file" id="fileInput" hidden
+                   accept="video/mp4,video/quicktime,video/x-msvideo,image/png,image/jpeg,application/pdf,text/plain,text/markdown,.md">
+            <button class="attach-btn" id="attachBtn" title="Attach file">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                   stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <input class="input-field" id="inputField" type="text"
+                   placeholder="Create a new campaign or adapt from an existing asset.">
+            <button class="send-btn" id="sendBtn" title="Send">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                   stroke-linejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"/>
+                <polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="error-overlay" id="errorOverlay" hidden>
+      <div class="error-card">
+        <p>Something went wrong. Please try again.</p>
+        <button class="error-restart" id="errorRestart">Start over</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- KB: passcode modal -->
+  <div class="kb-modal-overlay" id="kbPasscodeOverlay" hidden>
+    <div class="kb-modal-card">
+      <p class="kb-modal-title">Enter passcode</p>
+      <input class="kb-passcode-input" id="kbPasscodeInput" type="password"
+             placeholder="Passcode" autocomplete="off">
+      <div class="kb-modal-actions">
+        <button class="kb-modal-cancel" id="kbPasscodeCancel">Cancel</button>
+        <button class="kb-modal-confirm" id="kbPasscodeConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KB: file view modal -->
+  <div class="kb-modal-overlay" id="kbViewOverlay" hidden>
+    <div class="kb-view-card">
+      <div class="kb-view-header">
+        <span class="kb-view-filename" id="kbViewFilename"></span>
+        <button class="kb-view-close" id="kbViewClose" title="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <pre class="kb-view-content" id="kbViewContent"></pre>
+    </div>
+  </div>
+
+  <!-- KB: delete confirm modal -->
+  <div class="kb-modal-overlay" id="kbConfirmOverlay" hidden>
+    <div class="kb-modal-card">
+      <p class="kb-modal-title">Delete <span id="kbConfirmFilename"></span>?</p>
+      <p class="kb-modal-subtitle">This cannot be undone.</p>
+      <div class="kb-modal-actions">
+        <button class="kb-modal-cancel" id="kbConfirmCancel">Cancel</button>
+        <button class="kb-modal-danger" id="kbConfirmDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

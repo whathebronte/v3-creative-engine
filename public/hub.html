@@ -113,18 +113,18 @@
         color: 'from-blue-500 to-cyan-500',
         tools: [
           {
-            id: 'ytm-agent',
-            name: 'YTM Agent Collective',
-            description: 'Automating GTM with agentic workflow',
-            url: 'https://v3-creative-engine.web.app/agent-collective/',
+            id: 'ytm-agent-v2',
+            name: 'Agent Collective (ADK)',
+            description: 'Multi-agent pipeline powered by Google ADK + Gemini',
+            url: 'https://v3-creative-engine.web.app/agent-collective-v2/',
             icon: <Rocket className="w-8 h-8" />,
-            color: 'from-blue-500 to-cyan-500'
+            color: 'from-red-500 to-orange-500'
           },
           {
             id: 'ytm-creative',
             name: 'YTM Creative Generator',
             description: 'Prompt based creative generation',
-            url: 'https://v3-creative-engine.web.app/creative-generator/',
+            url: 'https://v3-creative-engine.web.app/creative-generator-v2/',
             icon: <Sparkles className="w-8 h-8" />,
             color: 'from-violet-500 to-purple-500'
           },
@@ -147,7 +147,7 @@
             id: 'shorts-brain',
             name: "APAC Shorts Brain '26",
             description: 'Automated campaign performance analysis',
-            url: 'https://v3-creative-engine.web.app/shorts-brain/',
+            url: 'https://apac-shorts-brain-2.web.app/',
             icon: <Brain className="w-8 h-8" />,
             color: 'from-pink-500 to-rose-500'
           },
@@ -171,7 +171,7 @@
         existingFavicons.forEach(favicon => favicon.remove());
 
         // Create new favicon with SVG data URI
-        const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23ef4444" rx="15"/><path d="M 35 25 L 35 75 L 75 50 Z" fill="white"/></svg>`;
+        const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><defs><linearGradient id="g" x1="0%25" y1="0%25" x2="0%25" y2="100%25"><stop offset="0%25" stop-color="%23FF0000"/><stop offset="100%25" stop-color="%23CC0000"/></linearGradient></defs><rect x="4" y="4" width="40" height="40" rx="8" ry="8" fill="url(%23g)"/><path d="M 18 14 L 18 34 L 34 24 Z" fill="white"/></svg>`;
         const dataUri = `data:image/svg+xml,${svgString}`;
 
         const favicon = document.createElement('link');

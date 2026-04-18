@@ -857,6 +857,147 @@ body {
 }
 
 /* ============================================================================
+   TRANSFER QUEUE (from Agent Collective MCP Bridge)
+   ============================================================================ */
+
+.transfer-queue {
+  background: #1a1a1a;
+  border-top: 2px solid #FF0000;
+  padding: 12px 20px;
+  flex-shrink: 0;
+}
+
+.transfer-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.transfer-queue-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #FF0000;
+}
+
+.transfer-queue-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.transfer-toggle-btn {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #00BFFF;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.transfer-toggle-btn:hover {
+  background: #3a3a3a;
+  border-color: #00BFFF;
+}
+
+.transfer-toggle-btn.active {
+  background: rgba(0, 191, 255, 0.15);
+  border-color: #00BFFF;
+}
+
+.transfer-dismiss-btn {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.transfer-dismiss-btn:hover {
+  color: #fff;
+  background: #3a3a3a;
+}
+
+.transfer-job-list {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+
+.transfer-job-item {
+  flex-shrink: 0;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  max-width: 220px;
+}
+
+.transfer-job-item:hover {
+  border-color: #FF0000;
+  background: #333;
+}
+
+.transfer-job-item.active {
+  border-color: #FF0000;
+  background: rgba(255, 0, 0, 0.1);
+}
+
+.transfer-job-item.done {
+  border-color: #00BFFF;
+  opacity: 0.6;
+}
+
+.transfer-job-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transfer-job-meta {
+  font-size: 10px;
+  color: #888;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.creative-package-panel {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #111;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+}
+
+.creative-package-content {
+  padding: 12px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  line-height: 1.6;
+  color: #ccc;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+/* ============================================================================
    BOTTOM PROMPT AREA
    ============================================================================ */
 
