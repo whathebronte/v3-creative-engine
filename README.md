@@ -237,6 +237,70 @@ Leave that terminal running. You should see lines like `Uvicorn running on http:
 
 **Switching to the cheap model for testing** (recommended while iterating): open `services/agent-collective-v2/agent_collective/agent.py` in the Cloud Shell Editor and change `MODEL_PRO = "gemini-2.5-pro"` to `"gemini-2.5-flash"` (~$0.15/run instead of ~$2–3/run). Change it back before deploying.
 
+### Inspecting outputs
+
+Every run writes files to disk inside the service folder. By default the market is `kr` (controlled by the `MARKET` env var — set `export MARKET=jp` / `in` / `id` before starting `uvicorn` to switch).
+
+```
+services/agent-collective-v2/agent_collective/outputs/<market>/
+  latest_marketing_brief.md           # Phase 1 brief
+  latest_creative_package.md          # Phase 2 creative package
+  latest_generation_manifest.json     # Handoff payload for Creative Generator V2
+  latest_full_campaign_manifest.json  # Full-campaign variant
+```
+
+**Three ways to look at them:**
+
+1. **Cloud Shell Editor** — click the pencil icon in the Cloud Shell toolbar to open the file tree, then navigate to the path above. Markdown files render nicely; JSON is syntax-highlighted.
+2. **List / print from the terminal** (open a second Cloud Shell tab so the server keeps running):
+   ```bash
+   cd ~/v3-creative-engine/services/agent-collective-v2/agent_collective/outputs/kr
+   ls -lh
+   cat latest_marketing_brief.md
+   ```
+3. **Download via the app's API** (same endpoints the frontend uses):
+   ```bash
+   curl -s http://localhost:8080/api/brief              -o brief.md
+   curl -s http://localhost:8080/api/creative-package   -o package.md
+   curl -s http://localhost:8080/api/manifest           -o manifest.json
+   ```
+
+Files named `latest_*` are overwritten by each run. If you want to keep a copy, rename it (`cp latest_marketing_brief.md brief-2026-04-18.md`) before running the pipeline again.
+
+### Adding knowledge base (KB) files
+
+The pipeline reads reference material from:
+
+```
+services/agent-collective-v2/agent_collective/kb/
+  global/   # shared across all markets
+  kr/       # Korea-only
+  jp/       # Japan-only
+  in/       # India-only
+  id/       # Indonesia-only
+```
+
+Only `.md` and `.json` files are accepted. Pick the right folder: market-specific context goes in the market folder; anything that applies to every market goes in `global/`.
+
+**Two ways to add a file:**
+
+1. **Through the UI** (easiest) — the demo UI at port 8080 has a KB panel with drag-and-drop upload. Pick the scope (global / kr / jp / in / id) and drop the `.md` or `.json` file. It lands in the folder above automatically.
+2. **Directly on disk** — upload the file into Cloud Shell (drag-and-drop into the Cloud Shell Editor, or use the **⋮ → Upload** menu), then move it into place:
+   ```bash
+   mv ~/your-file.md ~/v3-creative-engine/services/agent-collective-v2/agent_collective/kb/global/
+   ```
+   Restart `uvicorn` (`Ctrl+C` then run the start command again) so the agents re-scan the KB folder on boot.
+
+**Checking what's loaded:**
+```bash
+ls ~/v3-creative-engine/services/agent-collective-v2/agent_collective/kb/global/
+ls ~/v3-creative-engine/services/agent-collective-v2/agent_collective/kb/kr/
+# or via API:
+curl -s http://localhost:8080/api/kb
+```
+
+> KB files you add locally are NOT pushed to Cloud Run — they live only on your Cloud Shell VM. To make them available in production, commit them to the repo and redeploy (`./deploy.sh`).
+
 ## Deploying to Public Hosting
 
 ### Hosting (static + rewrites)
