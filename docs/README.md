@@ -14,6 +14,7 @@ All documentation is organized into subdirectories by topic. Start with the file
 | Set up Vertex AI | [guides/VERTEX_AI_SETUP.md](guides/VERTEX_AI_SETUP.md) |
 | Review security posture | [security/SECURITY_AUDIT_REPORT.md](security/SECURITY_AUDIT_REPORT.md) |
 | Understand the migration history | [migration/MIGRATION_SUMMARY.md](migration/MIGRATION_SUMMARY.md) |
+| Revamp Agent Collective | [architecture/AGENT_COLLECTIVE_REVAMP.md](architecture/AGENT_COLLECTIVE_REVAMP.md) |
 
 ---
 
@@ -25,7 +26,8 @@ docs/
 ├── architecture/                      # System design & technical specs
 │   ├── TECHNICAL_DESIGN_DOCUMENT.md   # Comprehensive architecture (2600 lines)
 │   ├── MULTI_USER_ANALYSIS.md         # Multi-user support analysis
-│   └── MCP_BRIDGE_INTEGRATION.md      # MCP bridge integration docs
+│   ├── MCP_BRIDGE_INTEGRATION.md      # MCP bridge integration docs
+│   └── AGENT_COLLECTIVE_REVAMP.md     # Agent Collective revamp integration guide
 │
 ├── guides/                            # Setup & operational guides
 │   ├── GETTING_STARTED.md             # Local dev & deployment guide
