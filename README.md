@@ -301,6 +301,32 @@ curl -s http://localhost:8080/api/kb
 
 > KB files you add locally are NOT pushed to Cloud Run — they live only on your Cloud Shell VM. To make them available in production, commit them to the repo and redeploy (`./deploy.sh`).
 
+### Persistence + uploading KB from your laptop
+
+**Cloud Shell keeps your `$HOME` for you.** Everything under `~/v3-creative-engine/` — including `outputs/` and `kb/` — survives when you close the tab, disconnect, or come back tomorrow. Cloud Shell gives you 5 GB of persistent home-directory storage; it only resets if you don't open Cloud Shell for 120+ days. You do NOT need to re-clone or re-upload between sessions.
+
+Two practical notes:
+- `outputs/` is in `.gitignore`, so `git pull` / `git checkout` won't wipe it.
+- `kb/` is NOT gitignored. After you drop files into `kb/`, `git status` will show them — if you don't want them committed, leave them uncommitted; they'll still persist locally in `$HOME`.
+
+**Four ways to copy KB files from your laptop into Cloud Shell** (pick whichever is easiest):
+
+1. **Drag-and-drop into the Cloud Shell Editor** (easiest). Click the pencil icon in the Cloud Shell toolbar to open the editor, expand the file tree to `services/agent-collective-v2/agent_collective/kb/<scope>/`, then drag the file from your laptop's Finder / Explorer straight into that folder.
+
+2. **Upload via the Cloud Shell menu.** In the Cloud Shell terminal toolbar click the **⋮** (three-dot menu) → **Upload** → pick the file. It lands in your `$HOME`. Move it into place:
+   ```bash
+   mv ~/your-file.md ~/v3-creative-engine/services/agent-collective-v2/agent_collective/kb/global/
+   ```
+
+3. **Use the app's KB upload panel.** Start the server, open Web Preview on port 8080, go to the KB panel, pick the scope, drop the file. This writes straight into the correct `kb/<scope>/` folder — no `mv` needed.
+
+4. **Go through git** (only if you want the file in production too). On your laptop: drop the file into the repo's `kb/` folder, commit, push. On Cloud Shell: `cd ~/v3-creative-engine && git pull`. Then `./deploy.sh` to ship it to Cloud Run.
+
+**Downloading outputs back to your laptop.** Right-click any file in the Cloud Shell Editor → **Download**. Or from the terminal toolbar, **⋮** → **Download file** → paste the full path, e.g.:
+```
+/home/<your-user>/v3-creative-engine/services/agent-collective-v2/agent_collective/outputs/kr/latest_marketing_brief.md
+```
+
 ## Deploying to Public Hosting
 
 ### Hosting (static + rewrites)
