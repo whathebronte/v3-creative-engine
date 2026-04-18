@@ -51,17 +51,15 @@ functions/
 
 ## ES Module Bridge Pattern
 
-Template Stamper and Shorts Intel Hub use TypeScript/ES module syntax. Since Cloud Functions uses CommonJS, they are wrapped:
+Template Stamper and Shorts Intel Hub ship ES-module code inside their subfolders. Since the `functions/` codebase is CommonJS, each tool is wrapped:
 
 ```
-tools/template-stamper/functions/src/  →  functions/src/template-stamper/
-                                            ↓ (via template-stamper-wrapper.js)
-                                            exports.tsCreateJob, etc.
+functions/src/template-stamper/index.js    (ES module — canonical)
+   ↑ dynamic-imported by
+functions/src/template-stamper-wrapper.js  (CommonJS — exports tsCreateJob, etc.)
 ```
 
-> **Important:** `functions/src/template-stamper/` is the canonical deployed source.
-> `tools/template-stamper/functions/src/` is a legacy copy that has diverged.
-> Always make backend changes in `functions/src/template-stamper/`.
+Shorts Intel Hub follows the same pattern via `shorts-intel-hub-wrapper.js`. Always make backend changes in `functions/src/<tool>/`. The old `tools/<tool>/functions/` and `tools/<tool>/backend/` mirrors were moved to `archive/backend/` during the April 2026 cleanup.
 
 ## Deploy
 

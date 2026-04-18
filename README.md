@@ -80,7 +80,7 @@ v3-creative-engine/
 - **Agent Collective V2 + Creative Generator V2** — ADK multi-agent pipelines on Cloud Run, React/Vite frontends, MCP bridge via Firestore (`chat_archives_v2`, `prompt_transfers_v2`). Auto-reconnect on expired Cloud Run sessions.
 - **Shorts Intel Hub ERS rework** — Python ERS formula ported to Node, dual-format ingestion (Vayner trend-level + Nyan Cat video-level), brand-safety hiding, Scoring Settings UI for the full multiplier config.
 - **Three-track topic matching** — Jaccard 0.35 → Vertex AI `text-embedding-004` cosine 0.72 matcher between Nyan Cat ↔ Vayner sources (`POST /api/match-and-rank`), with a Three-Track view in the frontend.
-- **Sync mirror** — `functions/src/shorts-intel-hub/` is now the canonical deployed path; `tools/shorts-intel-hub/backend/` is kept in sync.
+- **Canonical backend** — `functions/src/shorts-intel-hub/` is now the single deployed source; the old `tools/shorts-intel-hub/backend/` mirror moved to `archive/backend/` in the April 2026 cleanup.
 - **CI/CD** — `.github/workflows/deploy-hosting.yml` auto-deploys Hosting on push to `main`. Functions and Cloud Run services still deploy manually.
 
 ---
@@ -236,7 +236,7 @@ In Cloud Shell, click the **Web Preview** button (top right) → **Change port**
 
 **When you're done**: press `Ctrl+C` in each terminal to stop both servers.
 
-> Heads-up: there's a `services/agent-collective-v2/demo_ui/static/` folder with its own `index.html` + `app.js`. Ignore it — it's leftover scaffolding from the Google ADK sample project, not wired up (`server.py` sets `web=False` and has no static mount). The canonical frontend is `public/agent-collective-v2/`.
+> Heads-up: an unused ADK demo UI scaffold lived at `services/agent-collective-v2/demo_ui/static/`. It was never wired up (`server.py` sets `web=False`) and has been moved to `archive/frontend/agent-collective-v2-adk-demo-ui/`. The canonical frontend is `public/agent-collective-v2/`.
 
 **Troubleshooting**
 - *"command not found: uvicorn"* → you forgot `source .venv/bin/activate`. Run it and try again.
@@ -287,7 +287,7 @@ public/agent-collective-v2/
 | `demo_ui/server.py` / `kb_storage.py` | `Ctrl+C` uvicorn → re-run (or `uvicorn --reload`) | `./deploy.sh` |
 | `public/agent-collective-v2/*.html/.js/.css` | Just refresh the browser tab on port 5500 | `firebase deploy --only hosting` (or push to `main` — CI auto-deploys) |
 
-**Don't edit** `services/agent-collective-v2/demo_ui/static/` — unused scaffolding, see the heads-up above.
+**Do not resurrect** `archive/frontend/agent-collective-v2-adk-demo-ui/` — it's archived because it was never wired up; see `archive/README.md`.
 
 
 
