@@ -19,15 +19,47 @@ export interface Trend {
   score: number;
   velocity: 'increasing' | 'stable' | 'decreasing';
   ageInWeeks: number;
-  source: 'Search' | 'Nyan Cat' | 'Agency' | 'Music';
-  
+  source: TrendSource;
+
   // Performance metrics
   viewsVolume?: string;
   viewsVelocity?: string;
   creationRate?: string;
   watchtimeVolume?: string;
   watchtimeVelocity?: string;
-  
+
+  // Quality & safety (Vayner/Nyan Cat analysis)
+  contentQuality?: ContentQuality;
+  brandSafe?: boolean;
+  sentiment?: Sentiment;
+  hidden?: boolean;
+  hiddenReason?: string;
+  ers?: number | null;
+
+  // Trend analytics (Vayner fields)
+  trendVelocity?: TrendVelocityStage;
+  trendBucket?: string;
+  creationComplexity?: CreationComplexity;
+  trendScale?: TrendScale;
+  platformsTrending?: string[];
+  primaryMarkets?: string[];
+  secondaryMarkets?: string[];
+  platformOrigin?: string;
+  aiTool?: string;
+  genAI?: boolean;
+  initialTrigger?: string;
+  engagementRate?: number;
+
+  // Raw metrics (pre-aggregation)
+  views?: number;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  saves?: number;
+  creatorSubs?: number;
+  publicationDate?: string;
+  dateIdentified?: string;
+
   // Backend metadata
   createdAt?: string;
   updatedAt?: string;
@@ -37,8 +69,13 @@ export interface Trend {
   geminiProcessedAt?: string;
 }
 
-export type TrendSource = 'Search' | 'Nyan Cat' | 'Agency' | 'Music';
+export type TrendSource = 'Search' | 'Nyan Cat' | 'Vayner' | 'Agency' | 'Music';
 export type TrendVelocity = 'increasing' | 'stable' | 'decreasing';
+export type TrendVelocityStage = 'Trending' | 'Emerging' | 'Niche';
+export type ContentQuality = 'good' | 'potentiallyAISlop' | 'aiSlop';
+export type Sentiment = 'positive' | 'neutral' | 'negative' | 'mixed';
+export type CreationComplexity = 'Easy' | 'Medium' | 'Hard';
+export type TrendScale = 'Creation-Led' | 'Viewer-led';
 
 // ============================================================================
 // MARKET TYPES
@@ -78,25 +115,62 @@ export type TargetDemo =
   | 'Females 45+';
 
 // ============================================================================
-// SCORING TYPES
+// SCORING TYPES — External Ranking Score (ERS)
 // ============================================================================
 
-export interface ScoringWeights {
-  viewsVolume: number;
-  viewsVelocity: number;
-  creationRate: number;
-  watchtimeVolume: number;
-  watchtimeVelocity: number;
-  ageInWeeks: number;
+export interface ScoringConfig {
+  velocity: {
+    trending: number;
+    emerging: number;
+    niche: number;
+  };
+  breakout: {
+    heavyMultiplier: number;   // views > subs * 5
+    lightMultiplier: number;   // views > subs
+    baseMultiplier: number;    // otherwise
+    heavyThreshold: number;    // multiple of subs for heavy
+  };
+  scale: {
+    creatorLed: number;
+    viewerLed: number;
+  };
+  complexity: {
+    easy: number;
+    medium: number;
+    hard: number;
+  };
+  distribution: {
+    perPlatformBoost: number;  // added per platform listed
+    perMarketBoost: number;    // added per market listed
+  };
+  freshness: {
+    recentDays: number;         // <= N days → boost
+    staleDays: number;          // > N days → penalty
+    stalePenalty: number;
+  };
+  quality: {
+    potentialSlopMultiplier: number;
+    slopHidden: boolean;
+  };
+  origin: {
+    youtubeShortsBoost: number;
+  };
 }
 
-export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
-  viewsVolume: 0.25,
-  viewsVelocity: 0.20,
-  creationRate: 0.15,
-  watchtimeVolume: 0.25,
-  watchtimeVelocity: 0.10,
-  ageInWeeks: 0.05,
+export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
+  velocity: { trending: 2.5, emerging: 1.5, niche: 1.0 },
+  breakout: {
+    heavyMultiplier: 1.5,
+    lightMultiplier: 1.2,
+    baseMultiplier: 1.0,
+    heavyThreshold: 5,
+  },
+  scale: { creatorLed: 1.5, viewerLed: 1.0 },
+  complexity: { easy: 1.5, medium: 1.2, hard: 1.0 },
+  distribution: { perPlatformBoost: 0.2, perMarketBoost: 0.15 },
+  freshness: { recentDays: 7, staleDays: 30, stalePenalty: 0.8 },
+  quality: { potentialSlopMultiplier: 0.6, slopHidden: true },
+  origin: { youtubeShortsBoost: 1.2 },
 };
 
 // ============================================================================
@@ -128,7 +202,7 @@ export interface TrendsResponse {
 }
 
 export interface ScoringSettingsResponse {
-  weights: ScoringWeights;
+  config: ScoringConfig;
   updatedAt: string;
   market?: string;
 }
@@ -198,7 +272,7 @@ export interface ArchiveFilters {
 // CONSTANTS
 // ============================================================================
 
-export const TREND_SOURCES: TrendSource[] = ['Search', 'Nyan Cat', 'Agency', 'Music'];
+export const TREND_SOURCES: TrendSource[] = ['Search', 'Nyan Cat', 'Vayner', 'Agency', 'Music'];
 
 export const TARGET_DEMOS: TargetDemo[] = [
   'All Demographics',
@@ -229,6 +303,7 @@ export const VELOCITY_COLORS = {
 export const SOURCE_COLORS = {
   Search: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   'Nyan Cat': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  Vayner: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   Agency: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   Music: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
 } as const;

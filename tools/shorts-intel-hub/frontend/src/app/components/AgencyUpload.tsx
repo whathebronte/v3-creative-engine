@@ -1,121 +1,98 @@
 import { useState, useRef } from 'react';
 import { Upload, FileText, Download, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { uploadCsvFile, type CsvUploadResponse } from '@/services/api';
 
 interface UploadLog {
   id: string;
   fileName: string;
   uploadedAt: Date;
   status: 'success' | 'processing' | 'error';
-  recordCount?: number;
+  format?: string;
+  stats?: CsvUploadResponse['stats'];
+  errorMessage?: string;
   source: string;
 }
 
 const templateMarkdown = `# Shorts Intel Hub - Data Upload Template
 
-## Competitive Intel (Agency) Format
+Two CSV formats are supported. The server auto-detects format from the headers.
 
-Please provide trending topics from TikTok and Instagram in the following format:
+---
 
-\`\`\`json
-{
-  "topicName": "Your Topic Name",
-  "description": "Why is this trending? What is the content about? Be specific.",
-  "targetDemo": "e.g., Females 18-24, Males 25-34, All 18-34",
-  "referenceLink": "URL to representative video",
-  "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3"],
-  "audio": "Song or audio name (optional)",
-  "source": "TikTok" or "Instagram"
-}
+## 1. Vayner (trend-level, curated)
+
+One row per trend. Required headers:
+
+\`\`\`
+Date Identified, GenAI/non-GenAI, Topic Name, Trend Velocity, Description,
+Creation Complexity (Ease of Participation), Trend Scale (Creation-led/Viewer-led),
+Trend Bucket, AI Tool, Brand Safe, Content Quality, Initial Trigger,
+Reference Links, Publication Date, Length of Video (sec), Creator Subscriber Count,
+Views, Likes, Comments, Reposts (IG or X), Shares (TT-only, Saves (TT-only),
+Engagement Rate, Hashtags (comma-separated), Audio Track, Audio Track URL,
+Creation Volume, Platform Origin, Platforms Trending, Primary Markets,
+Secondary Markets, Target Demo, User Sentiment, Score Ranking, Normalized
 \`\`\`
 
-## Music Partnership Format
+### Quality gate values
+- **Brand Safe**: \`Yes\` | \`No\`
+- **Content Quality**: \`Not AI Slop\` | \`Potential AI Slop\` | \`AI Slop\` | (blank)
+- **User Sentiment**: \`Positive\` | \`Mix-Sentiment\` | \`Negative\`
+- **Trend Velocity**: \`Trending\` | \`Emerging\` | \`Niche\`
+- **Creation Complexity**: \`Easy\` | \`Medium\` | \`Hard\`
+- **Trend Scale**: \`Creation-Led\` | \`Viewer-led\`
 
-For artist and song submissions:
+Trends with \`Brand Safe=No\`, \`Content Quality=AI Slop\`, or \`User Sentiment=Negative\`
+are scored as 0 and hidden by default. \`Potential AI Slop\` trends appear with a
+"For quality review" pill.
 
-\`\`\`json
-{
-  "topicName": "Artist Name - Song Title",
-  "description": "Context about why this song is trending or relevant for campaigns",
-  "targetDemo": "Target audience for this music",
-  "referenceLink": "YouTube Music link or example video",
-  "audio": "Song Title - Artist Name",
-  "hashtags": ["#music", "#relevant", "#tags"]
-}
+---
+
+## 2. Nyan Cat (video-level, raw)
+
+One row per YouTube Short. The server groups by \`audio_id\` and aggregates
+views, watchtime, and quality signals into trend-level rows.
+
+Required headers:
+
+\`\`\`
+external_video_id, Shorts_link, audio_id, Song_link, Song_title,
+shorts_video_published_date, title, description, Hashtags, Is_CPM_Creator,
+Is_influencer, shorts_video_upload_country, yearr, length_sec,
+has_video_shorts_creation, first_level_vertical_name, second_level_vertical_name,
+third_level_vertical_name, lego_level_1_name, lego_level_2_name, lego_level_3_name,
+creator_age_bucket, creator_gender, elmo_bucket, subs_bucket,
+downstream_uploads_1d_by_shorts_video_published_date,
+downstream_uploads_2d_by_shorts_video_published_date,
+downstream_uploads_3d_by_shorts_video_published_date,
+Views_1D, watch_time_hour_1D, potential_watch_time_hour_1D, engagement_1D,
+Views_2D, watch_time_hour_2D, potential_watch_time_hour_2D, engagement_2D,
+Views_3D, watch_time_hour_3D, potential_watch_time_hour_3D, engagement_3D,
+Total_followers_at_video_published_date, Net_Likes_at_video_published_date,
+visual_quality_score, audio_quality_score,
+Net_Likes_last_30d_from_video_published_date, monetization_enabled_avod,
+linear_reg_7d_pred
 \`\`\`
 
-## Batch Upload Format
+### Inferred quality signals
+- \`elmo_bucket\` not in \`TRUSTED\`/\`LOW_RISK\` anywhere in the group → Brand Safe = No
+- Average \`visual_quality_score\` < 0.30 → AI Slop (hidden)
+- Average \`visual_quality_score\` < 0.45 → Potential AI Slop (flagged for review)
 
-For multiple entries, use JSON array:
+---
 
-\`\`\`json
-[
-  {
-    "topicName": "Topic 1",
-    "description": "Description...",
-    ...
-  },
-  {
-    "topicName": "Topic 2",
-    "description": "Description...",
-    ...
-  }
-]
-\`\`\`
+## Tips
 
-## Required Fields
-
-- **topicName** (mandatory): Clear, concise headline
-- **description** (mandatory): Detailed context about the trend
-- **targetDemo** (mandatory): Specific audience segment
-- **referenceLink** (mandatory): URL to representative content
-
-## Optional Fields
-
-- **hashtags**: Array of relevant hashtags
-- **audio**: Specific song or audio track name
-- **source**: Where this trend originated
-
-## Tips for Quality Submissions
-
-1. **Be Specific**: "K-Beauty Glass Skin Routine" is better than "Beauty Trend"
-2. **Provide Context**: Explain WHY it's trending, not just WHAT it is
-3. **Target Precisely**: Use specific demo segments when possible
-4. **Fresh Content**: Focus on trends from the past 1-2 weeks
-5. **Quality Over Quantity**: 5 well-researched trends beat 20 generic ones
-
-## Questions?
-
-Contact the APAC Shorts Intel Hub team for assistance.
+1. Export directly from your pipeline — the server handles quoted/multi-line
+   fields per RFC 4180.
+2. CSV only. JSON support is deprecated for batch uploads.
+3. Upload multiple files in a single session — each is processed independently.
+4. After upload, review the format detected + counts in the log below.
 `;
 
 export function AgencyUpload() {
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadLogs, setUploadLogs] = useState<UploadLog[]>([
-    {
-      id: '1',
-      fileName: 'competitive-intel-week2.json',
-      uploadedAt: new Date(2026, 0, 12, 14, 30),
-      status: 'success',
-      recordCount: 15,
-      source: 'Agency - TikTok/Instagram',
-    },
-    {
-      id: '2',
-      fileName: 'music-trends-january.json',
-      uploadedAt: new Date(2026, 0, 10, 9, 15),
-      status: 'success',
-      recordCount: 8,
-      source: 'Music Partnership',
-    },
-    {
-      id: '3',
-      fileName: 'weekly-trends-kr.json',
-      uploadedAt: new Date(2026, 0, 6, 16, 45),
-      status: 'success',
-      recordCount: 12,
-      source: 'Agency - Korea',
-    },
-  ]);
+  const [uploadLogs, setUploadLogs] = useState<UploadLog[]>([]);
   const [showTemplate, setShowTemplate] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -140,41 +117,52 @@ export function AgencyUpload() {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-
-    const files = Array.from(e.dataTransfer.files);
-    handleFiles(files);
+    handleFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      handleFiles(files);
-    }
+    if (e.target.files) handleFiles(Array.from(e.target.files));
   };
 
   const handleFiles = (files: File[]) => {
     files.forEach((file) => {
-      // Simulate file processing
-      const newLog: UploadLog = {
-        id: Date.now().toString() + Math.random(),
+      const logId = `${Date.now()}-${Math.random()}`;
+      const pending: UploadLog = {
+        id: logId,
         fileName: file.name,
         uploadedAt: new Date(),
         status: 'processing',
         source: 'Manual Upload',
       };
+      setUploadLogs((prev) => [pending, ...prev]);
 
-      setUploadLogs((prev) => [newLog, ...prev]);
-
-      // Simulate processing
-      setTimeout(() => {
-        setUploadLogs((prev) =>
-          prev.map((log) =>
-            log.id === newLog.id
-              ? { ...log, status: 'success', recordCount: Math.floor(Math.random() * 20) + 5 }
-              : log
-          )
-        );
-      }, 2000);
+      uploadCsvFile(file)
+        .then((res) => {
+          setUploadLogs((prev) =>
+            prev.map((log) =>
+              log.id === logId
+                ? {
+                    ...log,
+                    status: 'success',
+                    format: res.format,
+                    stats: res.stats,
+                    source: res.format === 'vayner' ? 'Vayner (trend-level)'
+                      : res.format === 'nyancat' ? 'Nyan Cat (video-level, aggregated)'
+                      : 'Unknown',
+                  }
+                : log
+            )
+          );
+        })
+        .catch((err) => {
+          setUploadLogs((prev) =>
+            prev.map((log) =>
+              log.id === logId
+                ? { ...log, status: 'error', errorMessage: err.message ?? 'Upload failed' }
+                : log
+            )
+          );
+        });
     });
   };
 
@@ -197,8 +185,9 @@ export function AgencyUpload() {
         <div className="mb-6 p-4 bg-card border border-border rounded-lg">
           <h3 className="text-foreground mb-2">Agency Upload Portal</h3>
           <p className="text-muted-foreground">
-            Upload competitive intelligence and music trends data to feed the Shorts Intel Hub. 
-            No login required - this portal is accessible for external agency partners.
+            Upload Vayner trend reports or Nyan Cat video exports. The server
+            auto-detects format, aggregates video rows by audio, applies the
+            ERS ranking, and flags trends for brand safety or AI slop review.
           </p>
         </div>
 
@@ -208,7 +197,7 @@ export function AgencyUpload() {
             <div>
               <h3 className="text-foreground mb-2">Upload Template & Guidelines</h3>
               <p className="text-muted-foreground">
-                Download the template to understand the required format for data submissions
+                Supports both Vayner and Nyan Cat CSV exports.
               </p>
             </div>
             <button
@@ -237,9 +226,7 @@ export function AgencyUpload() {
         {/* Upload Area */}
         <div
           className={`mb-6 border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
-            isDragging
-              ? 'border-primary bg-primary/5'
-              : 'border-border bg-card hover:border-primary/50'
+            isDragging ? 'border-primary bg-primary/5' : 'border-border bg-card hover:border-primary/50'
           }`}
           onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
@@ -247,9 +234,9 @@ export function AgencyUpload() {
           onDrop={handleDrop}
         >
           <Upload className="size-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-foreground mb-2">Drag & Drop Files Here</h3>
+          <h3 className="text-foreground mb-2">Drag & Drop CSV Files Here</h3>
           <p className="text-muted-foreground mb-4">
-            Supported formats: JSON, CSV, TXT
+            Vayner or Nyan Cat format — auto-detected
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -261,7 +248,7 @@ export function AgencyUpload() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".json,.csv,.txt"
+            accept=".csv,text/csv"
             onChange={handleFileInput}
             className="hidden"
           />
@@ -270,31 +257,21 @@ export function AgencyUpload() {
         {/* Upload History */}
         <div className="bg-card border border-border rounded-lg p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-foreground">Upload History (This Week Only)</h3>
-            <span className="text-sm text-muted-foreground">Week of Jan 13-19, 2026</span>
+            <h3 className="text-foreground">Upload History (This Session)</h3>
           </div>
 
           {uploadLogs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No uploads yet
+              No uploads yet — drop a Vayner or Nyan Cat CSV above to begin.
             </div>
           ) : (
             <div className="space-y-3">
               {uploadLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-center gap-4 p-4 bg-muted rounded-lg"
-                >
+                <div key={log.id} className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                   <div className="flex-shrink-0">
-                    {log.status === 'success' && (
-                      <CheckCircle2 className="size-6 text-green-600" />
-                    )}
-                    {log.status === 'processing' && (
-                      <Clock className="size-6 text-blue-600 animate-pulse" />
-                    )}
-                    {log.status === 'error' && (
-                      <AlertCircle className="size-6 text-red-600" />
-                    )}
+                    {log.status === 'success' && <CheckCircle2 className="size-6 text-green-600" />}
+                    {log.status === 'processing' && <Clock className="size-6 text-blue-600 animate-pulse" />}
+                    {log.status === 'error' && <AlertCircle className="size-6 text-red-600" />}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -304,12 +281,25 @@ export function AgencyUpload() {
                     </div>
                     <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                       <span>{log.source}</span>
-                      {log.recordCount && (
-                        <span>• {log.recordCount} records processed</span>
+                      {log.stats && (
+                        <>
+                          <span>• {log.stats.total} trends</span>
+                          <span>• {log.stats.visible} visible</span>
+                          {log.stats.hidden > 0 && (
+                            <span>• {log.stats.hidden} hidden</span>
+                          )}
+                          {log.stats.forQualityReview > 0 && (
+                            <span className="text-orange-500">
+                              • {log.stats.forQualityReview} for review
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {log.errorMessage && (
+                        <span className="text-red-500">• {log.errorMessage}</span>
                       )}
                       <span>
-                        • {log.uploadedAt.toLocaleDateString()} at{' '}
-                        {log.uploadedAt.toLocaleTimeString()}
+                        • {log.uploadedAt.toLocaleDateString()} at {log.uploadedAt.toLocaleTimeString()}
                       </span>
                     </div>
                   </div>
@@ -341,8 +331,9 @@ export function AgencyUpload() {
         <div className="mt-6 p-4 bg-muted rounded-lg">
           <h4 className="text-foreground mb-2">Need Help?</h4>
           <p className="text-muted-foreground text-sm">
-            For questions about data format, submission guidelines, or technical issues, 
-            contact the APAC Shorts Intel Hub team at <span className="text-primary">shorts-intel@example.com</span>
+            For questions about data format, submission guidelines, or technical issues,
+            contact the APAC Shorts Intel Hub team at{' '}
+            <span className="text-primary">shorts-intel@example.com</span>
           </p>
         </div>
       </div>

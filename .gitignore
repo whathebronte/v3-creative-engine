@@ -1,3 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.adk/
+
+# Agent Collective V2 outputs (generated at runtime)
+services/agent-collective-v2/agent_collective/outputs/
+
+# Source maps
+*.js.map
+
 # Dependencies
 node_modules/
 npm-debug.log*

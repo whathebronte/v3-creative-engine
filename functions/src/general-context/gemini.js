@@ -384,7 +384,7 @@ class GeminiClient {
         width: this._getWidth(format),
         height: this._getHeight(format),
         mimeType: 'video/mp4',
-        model: 'veo-3.1-fast-generate-preview'
+        model: 'veo-3.1-fast-generate-001'
       };
 
       // Add source image reference only for image-to-video
@@ -429,10 +429,10 @@ class GeminiClient {
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
-    // Vertex AI endpoint for Veo 3.1 Fast
-    const endpoint = `https://${this.location}-aiplatform.googleapis.com/v1/projects/${this.projectId}/locations/${this.location}/publishers/google/models/veo-3.1-fast-generate-preview:predictLongRunning`;
+    // Vertex AI endpoint for Veo 3.1 Fast (GA)
+    const endpoint = `https://${this.location}-aiplatform.googleapis.com/v1/projects/${this.projectId}/locations/${this.location}/publishers/google/models/veo-3.1-fast-generate-001:predictLongRunning`;
 
-    console.log(`[VertexAI] Calling veo-3.1-fast-generate-preview endpoint`);
+    console.log(`[VertexAI] Calling veo-3.1-fast-generate-001 endpoint`);
 
     // Build instance object
     const instance = {
