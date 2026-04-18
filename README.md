@@ -1,22 +1,25 @@
 # V3 Creative Engine
 
-Firebase monorepo consolidating 6 YouTube Shorts automation tools into a single ecosystem for the YouTube Marketing APAC team.
+Firebase + Cloud Run monorepo consolidating the YouTube Shorts automation stack for the YouTube Marketing APAC team.
 
-**Live:** https://v3-creative-engine.web.app/ | **Firebase Project:** `v3-creative-engine`
+**Live:** https://v3-creative-engine.web.app/ · **Firebase/GCP project:** `v3-creative-engine`
 
 ---
 
 ## Tools
 
-| Tool | URL | Description | Stack |
-|---|---|---|---|
-| **Hub** | [/](https://v3-creative-engine.web.app/) | Central launcher for all tools | HTML |
-| **Creative Generator** | [/creative-generator/](https://v3-creative-engine.web.app/creative-generator/) | AI image & video generation (Imagen 3 + Veo) | HTML/JS |
-| **Agent Collective** | [/agent-collective/](https://v3-creative-engine.web.app/agent-collective/) | Multi-agent workflow automation | HTML |
-| **Template Stamper** | [/template-stamper/](https://v3-creative-engine.web.app/template-stamper/) | Batch video rendering via Remotion | React + TS |
-| **Shorts Intel Hub** | [/shorts-intel-hub/](https://v3-creative-engine.web.app/shorts-intel-hub/) | Weekly trending topics dashboard | React + TS |
-| **Shorts Brain** | [/shorts-brain/](https://v3-creative-engine.web.app/shorts-brain/) | Campaign performance memory | React |
-| Campaign Learnings | (future) | Performance correlation engine | — |
+| Tool | URL | Frontend source | Deployed frontend | Backend |
+|---|---|---|---|---|
+| **Hub** | [/](https://v3-creative-engine.web.app/) | `public/hub.html` (edit in place) | `public/hub.html` | — |
+| **Creative Generator** (V1) | [/creative-generator/](https://v3-creative-engine.web.app/creative-generator/) | `public/creative-generator/` (vanilla, edit in place) | `public/creative-generator/` | Cloud Functions — `functions/src/creative-generator/` |
+| **Creative Generator V2** | [/creative-generator-v2/](https://v3-creative-engine.web.app/creative-generator-v2/) | `tools/creative-generator-v2/` (React + Vite) | `public/creative-generator-v2/` | Cloud Run — `services/creative-generator-v2/` (Python / ADK) |
+| **Agent Collective** (V1) | [/agent-collective/](https://v3-creative-engine.web.app/agent-collective/) | `public/agent-collective/` (vanilla, edit in place) | `public/agent-collective/` | Cloud Functions — `callGeminiAgent` in `functions/src/general-context/` |
+| **Agent Collective V2** | [/agent-collective-v2/](https://v3-creative-engine.web.app/agent-collective-v2/) | `public/agent-collective-v2/` (edit in place) | `public/agent-collective-v2/` | Cloud Run — `services/agent-collective-v2/` (Python / ADK, 38-agent pipeline) |
+| **Template Stamper** | [/template-stamper/](https://v3-creative-engine.web.app/template-stamper/) | `tools/template-stamper/` (React + TS + Remotion) | `public/template-stamper/` | Cloud Functions (`ts*`) + Cloud Run renderer — `functions/src/template-stamper/` |
+| **Shorts Intel Hub** | [/shorts-intel-hub/](https://v3-creative-engine.web.app/shorts-intel-hub/) | `tools/shorts-intel-hub/frontend/` (React + TS) | `public/shorts-intel-hub/` | Cloud Functions (`shortsIntel*`) + Cloud SQL — `functions/src/shorts-intel-hub/` |
+| **Shorts Brain** | [/shorts-brain/](https://v3-creative-engine.web.app/shorts-brain/) | `tools/shorts-brain/` (React + Vite) | `public/shorts-brain/` | Cloud Functions (`sb*`) — `functions/src/shorts-brain/` |
+
+> V1 Agent Collective and Creative Generator remain live for backward compatibility. The hub now points at the V2 apps; the MCP bridge ships a generation manifest from Agent Collective V2 → Creative Generator V2 via Firestore (`prompt_transfers_v2`).
 
 ---
 
@@ -24,70 +27,90 @@ Firebase monorepo consolidating 6 YouTube Shorts automation tools into a single 
 
 ```
 v3-creative-engine/
-├── public/                        # Firebase Hosting (static files)
-│   ├── hub.html                   # Hub landing page
-│   ├── creative-generator/        # Vanilla HTML/JS app
-│   ├── agent-collective/          # Vanilla HTML app
-│   ├── shorts-brain/              # React app (pre-built)
-│   ├── shorts-intel-hub/          # React/TypeScript app (pre-built)
-│   └── template-stamper/          # React/TypeScript app (pre-built)
+├── public/                            # Firebase Hosting (served as-is)
+│   ├── hub.html                       # Landing page
+│   ├── creative-generator/            # Vanilla HTML/JS (V1) — edit in place
+│   ├── creative-generator-v2/         # Built from tools/creative-generator-v2/
+│   ├── agent-collective/              # Vanilla HTML (V1) — edit in place
+│   ├── agent-collective-v2/           # Vanilla HTML (V2) — edit in place
+│   ├── template-stamper/              # Built from tools/template-stamper/
+│   ├── shorts-intel-hub/              # Built from tools/shorts-intel-hub/frontend/
+│   └── shorts-brain/                  # Built from tools/shorts-brain/
 │
-├── functions/                     # Cloud Functions v2 (Node.js 20)
+├── tools/                             # Source for buildable frontends (→ public/)
+│   ├── creative-generator-v2/         # React + Vite + Tailwind
+│   ├── template-stamper/              # React + Vite + Remotion
+│   ├── shorts-intel-hub/frontend/     # React + TypeScript
+│   └── shorts-brain/                  # React + Vite
+│
+├── functions/                         # Cloud Functions v2 (Node 20, CommonJS)
 │   └── src/
-│       ├── index.js               # Main entry point — all function exports
-│       ├── creative-generator/    # Image/video generation (Vertex AI)
-│       ├── shorts-intel-hub/      # Trending topics backend
-│       ├── template-stamper/      # Video rendering backend
-│       ├── shorts-brain/          # Campaign memory system
-│       ├── general-context/       # Shared helpers (Gemini)
-│       ├── shorts-intel-hub-wrapper.js   # ES module compatibility bridge
-│       └── template-stamper-wrapper.js   # ES module compatibility bridge
+│       ├── index.js                   # Entry point — exports all functions
+│       ├── creative-generator/        # Imagen 3 + Veo (Vertex AI)
+│       ├── shorts-intel-hub/          # ERS scoring, Nyan Cat + Vayner ingestion, match-and-rank
+│       ├── template-stamper/          # Render job orchestration (canonical source)
+│       ├── shorts-brain/              # Campaign snapshots
+│       ├── general-context/           # Shared Gemini helper
+│       └── *-wrapper.js               # CommonJS ↔ ES module bridges
 │
-├── tools/                         # Source for React apps (build → public/)
-│   ├── template-stamper/          # React + Vite + Remotion source → public/template-stamper/
-│   ├── shorts-intel-hub/          # React + TypeScript source → public/shorts-intel-hub/
-│   └── shorts-brain/              # React + Vite source → public/shorts-brain/
+├── services/                          # Cloud Run backends (Python)
+│   ├── agent-collective-v2/           # 38-agent ADK pipeline + FastAPI + deploy.sh
+│   └── creative-generator-v2/         # ADK executor + manifest bridge + deploy.sh
 │
-├── docs/                          # All documentation (see docs/README.md)
-│   ├── README.md                  # Documentation index
-│   ├── architecture/              # System design & technical specs
-│   ├── guides/                    # Setup & operational guides
-│   ├── phases/                    # Phase records & planning
-│   ├── security/                  # Security audit & controls
-│   ├── team/                      # Team task references
-│   └── migration/                 # Consolidation history
+├── docs/                              # See docs/README.md for the full index
+│   ├── architecture/                  # TDD, MCP bridge, Agent Collective revamp, multi-user
+│   ├── guides/                        # Vertex AI setup, quota, getting started
+│   ├── phases/                        # Migration phase records
+│   ├── security/                      # Audit + measures
+│   └── migration/                     # Consolidation history
 │
-├── scripts/                       # Utility scripts (backup, setup)
-├── CLAUDE.md                      # AI session onboarding guide
-├── firebase.json                  # Hosting rewrites + Functions config
-├── firestore.rules                # Security rules for all tools
-├── firestore.indexes.json         # Firestore composite indexes
-├── storage.rules                  # Cloud Storage security rules
-└── .firebaserc                    # Firebase project binding
+├── scripts/                           # Firestore/Storage backup scripts
+├── CLAUDE.md                          # AI onboarding guide — read first for Claude Code sessions
+├── firebase.json                      # Hosting rewrites + Functions config
+├── firestore.rules / .indexes.json    # Firestore security + indexes
+├── storage.rules                      # Cloud Storage security
+├── .firebaserc                        # Firebase project binding
+└── .github/workflows/deploy-hosting.yml   # Auto-deploy hosting on push to main
 ```
+
+---
+
+## What's New (April 2026)
+
+- **Agent Collective V2 + Creative Generator V2** — ADK multi-agent pipelines on Cloud Run, React/Vite frontends, MCP bridge via Firestore (`chat_archives_v2`, `prompt_transfers_v2`). Auto-reconnect on expired Cloud Run sessions.
+- **Shorts Intel Hub ERS rework** — Python ERS formula ported to Node, dual-format ingestion (Vayner trend-level + Nyan Cat video-level), brand-safety hiding, Scoring Settings UI for the full multiplier config.
+- **Three-track topic matching** — Jaccard 0.35 → Vertex AI `text-embedding-004` cosine 0.72 matcher between Nyan Cat ↔ Vayner sources (`POST /api/match-and-rank`), with a Three-Track view in the frontend.
+- **Sync mirror** — `functions/src/shorts-intel-hub/` is now the canonical deployed path; `tools/shorts-intel-hub/backend/` is kept in sync.
+- **CI/CD** — `.github/workflows/deploy-hosting.yml` auto-deploys Hosting on push to `main`. Functions and Cloud Run services still deploy manually.
 
 ---
 
 ## Architecture
 
-### Infrastructure (100% Google Cloud)
-
 ```
 Firebase Hosting (v3-creative-engine.web.app)
-    ├── Static SPAs (Creative Generator, Agent Collective, Hub)
-    ├── Built React Apps (Template Stamper, Shorts Intel Hub, Shorts Brain)
-    └── Rewrites → Cloud Functions v2
-            ├── Vertex AI: Imagen 3 (images), Veo (videos), Gemini (text)
-            ├── Cloud Storage: Generated assets (CDN-backed)
-            ├── Firestore: Job state, templates, trends, snapshots
-            ├── Cloud Run: Remotion video rendering (Template Stamper)
-            └── Cloud SQL: PostgreSQL + pgvector (Shorts Intel Hub)
+  ├── Static pages                      (hub, V1 creative-generator, V1/V2 agent-collective)
+  ├── Built React apps                  (V2 creative-generator, template-stamper, shorts-intel-hub, shorts-brain)
+  └── Rewrites
+        ├── /shorts-intel-hub/api/**    → Cloud Functions: shortsIntelApi
+        └── /<tool>/**                  → SPA index.html
+
+Cloud Functions v2 (Node 20)            Cloud Run (Python / ADK)
+  ├── Creative Generator (Vertex AI)      ├── agent-collective-v2
+  ├── Template Stamper (ts*)              └── creative-generator-v2
+  ├── Shorts Intel Hub (shortsIntel*)
+  └── Shorts Brain (sb*)
+
+Firestore:  jobs · template-stamper-jobs · shorts-intel · shorts-brain
+            chat_archives_v2 · prompt_transfers_v2
+Storage:    gs://v3-creative-engine.appspot.com (creative-generator/, template-stamper/)
+Cloud SQL:  PostgreSQL + pgvector (Shorts Intel Hub embeddings)
 ```
 
-### Key Patterns
-- **ES module bridge**: React tool functions (TypeScript) are wrapped with CommonJS-compatible wrapper files so they can be exported from the single `functions/src/index.js` entry point
-- **Function naming**: `ts*` (Template Stamper), `shortsIntel*` (Shorts Intel Hub), `sb*` (Shorts Brain), no prefix (Creative Generator)
-- **Single domain**: All tools under `v3-creative-engine.web.app` via Firebase Hosting rewrites
+**Key patterns**
+- **Function naming**: `ts*` (Template Stamper), `shortsIntel*` (Shorts Intel Hub), `sb*` (Shorts Brain), none (Creative Generator V1).
+- **ES module bridge**: React tools use TS/ESM; `*-wrapper.js` files wrap them for the CommonJS `functions/src/index.js` entry.
+- **Canonical backend paths**: always edit `functions/src/<tool>/` — `tools/<tool>/backend/` or `tools/<tool>/functions/` are mirrors.
 
 ---
 
@@ -95,116 +118,142 @@ Firebase Hosting (v3-creative-engine.web.app)
 
 ### Prerequisites
 - Node.js 20+
-- Firebase CLI: `npm install -g firebase-tools`
-- Firebase project access: `firebase login`
+- Python 3.11+ (only for Cloud Run services in `services/`)
+- Firebase CLI: `npm install -g firebase-tools` → `firebase login`
+- `gcloud` CLI authenticated to project `v3-creative-engine` (for Cloud Run deploys)
 
-### Install Dependencies
+### Install
 ```bash
 cd functions && npm install
+cd tools/creative-generator-v2 && npm install
 cd tools/template-stamper && npm install
 cd tools/shorts-intel-hub/frontend && npm install
+cd tools/shorts-brain && npm install
 ```
 
-### Build React Apps
+### Build frontends (required before deploying hosting)
 ```bash
-cd tools/template-stamper && npm run build           # → public/template-stamper/
-cd tools/shorts-intel-hub/frontend && npm run build  # → public/shorts-intel-hub/
-cd tools/shorts-brain && npm run build               # → public/shorts-brain/
+cd tools/creative-generator-v2 && npm run build     # → public/creative-generator-v2/
+cd tools/template-stamper && npm run build          # → public/template-stamper/
+cd tools/shorts-intel-hub/frontend && npm run build # → public/shorts-intel-hub/
+cd tools/shorts-brain && npm run build              # → public/shorts-brain/
+```
+V1 Creative Generator, V1/V2 Agent Collective, and the hub are vanilla — no build step.
+
+---
+
+## Local Testing
+
+### Option A — Firebase Emulators (recommended for Functions + Firestore + Storage)
+```bash
+firebase emulators:start
+# UI at http://localhost:4000, Functions at :5001, Firestore at :8080, Hosting at :5000
+```
+Persist state between runs:
+```bash
+firebase emulators:start --import=./emulator-data --export-on-exit
 ```
 
-### Local Development
+### Option B — Per-tool Vite dev servers (frontend iteration)
 ```bash
-firebase emulators:start                          # Full local stack
-cd tools/template-stamper && npm run dev          # Template Stamper only
-cd tools/shorts-intel-hub/frontend && npm run dev # Shorts Intel Hub only
+cd tools/creative-generator-v2 && npm run dev
+cd tools/template-stamper && npm run dev
+cd tools/shorts-intel-hub/frontend && npm run dev
+cd tools/shorts-brain && npm run dev
+```
+Set `VITE_API_BASE_URL` / `VITE_API_BASE` in each tool's `.env` to point at emulated Functions or a deployed Cloud Run URL.
+
+### Option C — Cloud Run services locally
+```bash
+cd services/creative-generator-v2
+pip install -r requirements.txt
+uvicorn server.app:app --reload --port 8080
+
+cd services/agent-collective-v2
+pip install -r requirements.txt
+python -m agent_collective     # or use the demo_ui/ server
 ```
 
-### Testing in Google Cloud Shell
+### Option D — Google Cloud Shell (zero local setup)
+1. Open https://shell.cloud.google.com/?project=v3-creative-engine
+2. `git clone https://github.com/whathebronte/v3-creative-engine.git && cd v3-creative-engine`
+3. `cd functions && npm install && cd ..`
+4. `firebase login --no-localhost` (paste the auth code back)
+5. `firebase emulators:start --only firestore,functions,storage`
+6. Open Cloud Shell **Web Preview** on port 4000 for the Emulator UI.
 
-Google Cloud Shell is the recommended way to test against the live Firebase project before deploying, without needing local setup.
-
-1. Open [Google Cloud Shell](https://shell.cloud.google.com/?project=v3-creative-engine)
-2. Clone the repo and install deps:
-   ```bash
-   git clone https://github.com/whathebronte/v3-creative-engine.git
-   cd v3-creative-engine
-   cd functions && npm install && cd ..
-   ```
-3. Authenticate Firebase CLI:
-   ```bash
-   firebase login --no-localhost
-   # Follow the URL printed, paste back the auth code
-   ```
-4. Run the Firebase emulators in Cloud Shell:
-   ```bash
-   firebase emulators:start --only firestore,functions,storage
-   ```
-   Cloud Shell will offer a **Web Preview** button (port 4000) to open the Emulator UI.
-5. Test function invocations directly:
-   ```bash
-   # Test a callable function via curl (emulator port 5001)
-   curl -s http://localhost:5001/v3-creative-engine/us-central1/createTestJob \
-     -H "Content-Type: application/json" \
-     -d '{"data": {"type": "image", "prompt": "test"}}'
-   ```
-6. Once satisfied, deploy:
-   ```bash
-   firebase deploy --only functions   # Deploy functions
-   firebase deploy --only hosting     # Deploy frontend
-   ```
-
-**Tips:**
-- Cloud Shell already has `gcloud`, `node`, and `npm` pre-installed
-- Use `firebase emulators:start --import=./emulator-data --export-on-exit` to persist test data between sessions
-- The Emulator UI at port 4000 shows Firestore data, function logs, and Storage in real time
-
-### Deploy
+Invoke a callable function directly:
 ```bash
-firebase deploy                           # Everything
-firebase deploy --only hosting            # Frontend only
-firebase deploy --only functions          # Backend only
-firebase deploy --only firestore:rules    # Firestore rules only
+curl -s http://localhost:5001/v3-creative-engine/us-central1/createTestJob \
+  -H "Content-Type: application/json" \
+  -d '{"data": {"type": "image", "prompt": "test"}}'
+```
+
+---
+
+## Deploying to Public Hosting
+
+### Hosting (static + rewrites)
+Auto-deploys on push to `main` via `.github/workflows/deploy-hosting.yml`. Manual:
+```bash
+firebase deploy --only hosting
+```
+Always rebuild the affected React app first (see **Build frontends**).
+
+### Cloud Functions
+```bash
+firebase deploy --only functions
+# Single function:
+firebase deploy --only functions:shortsIntelApi
+```
+
+### Firestore / Storage rules
+```bash
+firebase deploy --only firestore:rules
+firebase deploy --only storage:rules
+firebase deploy --only firestore:indexes
+```
+
+### Cloud Run services (V2 backends)
+```bash
+cd services/agent-collective-v2
+GOOGLE_API_KEY=... ./deploy.sh
+
+cd services/creative-generator-v2
+./deploy.sh
+```
+After deploy, copy the printed service URL into the corresponding frontend's `.env.production` (`VITE_API_BASE` / `VITE_API_BASE_URL`), rebuild, then `firebase deploy --only hosting`.
+
+### Full deploy
+```bash
+firebase deploy     # hosting + functions + rules + indexes (not Cloud Run)
 ```
 
 ---
 
 ## Adding a New Tool
 
-1. Create frontend in `public/tool-name/`
-2. Add Cloud Functions in `functions/src/tool-name/`
-3. Export functions from `functions/src/index.js`
-4. Add hosting rewrite to `firebase.json`
-5. Add tool link to `public/hub.html`
-
----
-
-## Migration History
-
-| Original Project | Status | Phase |
-|---|---|---|
-| v3-creative-engine (base) | ✅ Complete | Phase 1 |
-| shorts-intel-hub-5c45f | ✅ Complete | Phase 2 |
-| apac-shorts-brain-v2 | ✅ Complete | Phase 3 |
-| ytm-agent-collective-f4f71 | ✅ Complete | Phase 4 |
-| template-stamper-d7045 | ✅ Complete | Phase 6 |
-| campaign-learnings | ⏸️ Pending | Future |
-
-**Result**: 6 Firebase projects → 1 · ~80% cost reduction · Single domain
+1. Create frontend (`public/tool-name/` for vanilla, or `tools/tool-name/` + build target in `public/tool-name/` for React).
+2. Add Cloud Functions under `functions/src/tool-name/` and export them from `functions/src/index.js` (add a wrapper if the source is ESM).
+3. If a Cloud Run backend is needed, scaffold under `services/tool-name/` with a `Dockerfile` + `deploy.sh`.
+4. Add a hosting rewrite to `firebase.json`.
+5. Link the tool from `public/hub.html`.
 
 ---
 
 ## Documentation
 
-For AI sessions: read **[CLAUDE.md](CLAUDE.md)** first.
-For all docs: see **[docs/README.md](docs/README.md)**.
+Start with **[CLAUDE.md](CLAUDE.md)** (AI onboarding) or **[docs/README.md](docs/README.md)** (full index).
 
 Key references:
-- [System Architecture](docs/architecture/TECHNICAL_DESIGN_DOCUMENT.md)
-- [Vertex AI Setup](docs/guides/VERTEX_AI_SETUP.md)
-- [Security Audit](docs/security/SECURITY_AUDIT_REPORT.md)
-- [Migration Summary](docs/migration/MIGRATION_SUMMARY.md)
+- [System architecture (TDD)](docs/architecture/TECHNICAL_DESIGN_DOCUMENT.md)
+- [Agent Collective V2 architecture](docs/architecture/AGENT_COLLECTIVE_REVAMP.md)
+- [MCP bridge integration](docs/architecture/MCP_BRIDGE_INTEGRATION.md)
+- [Vertex AI setup](docs/guides/VERTEX_AI_SETUP.md)
+- [Security audit](docs/security/SECURITY_AUDIT_REPORT.md)
+- [Migration summary](docs/migration/MIGRATION_SUMMARY.md)
 
 ---
 
 **Team**: YouTube Marketing APAC (Gus · Marco · Dice)
-**Last Updated**: March 2026
+**Last updated**: April 2026
