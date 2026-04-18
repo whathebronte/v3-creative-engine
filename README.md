@@ -327,6 +327,35 @@ Two practical notes:
 /home/<your-user>/v3-creative-engine/services/agent-collective-v2/agent_collective/outputs/kr/latest_marketing_brief.md
 ```
 
+### Loading KB for the public site
+
+**Same folder, different delivery.** Production uses the exact same structure — `services/agent-collective-v2/agent_collective/kb/{global,kr,jp,in,id}/` — but the files have to be in the git repo when the Cloud Run image is built, because the Dockerfile copies `agent_collective/` into the container at deploy time. Runtime uploads via the live site's KB panel hit the container's ephemeral disk and disappear when Cloud Run recycles the instance, so they don't count as "production KB".
+
+The workflow:
+
+1. Put the file in the right `kb/<scope>/` folder (drag-drop in Cloud Shell Editor, or on your laptop in your local clone).
+2. Commit and push:
+   ```bash
+   cd ~/v3-creative-engine
+   git add services/agent-collective-v2/agent_collective/kb/
+   git commit -m "kb: add <short description>"
+   git push
+   ```
+3. Redeploy Cloud Run so the image picks up the new files:
+   ```bash
+   cd services/agent-collective-v2
+   GOOGLE_API_KEY=... ./deploy.sh
+   ```
+4. Verify on the live site (https://v3-creative-engine.web.app/agent-collective-v2/) — open the KB panel; the file should appear under the scope you picked.
+
+**Quick decision guide:**
+
+| What you want | Where to put it | How it lands |
+|---|---|---|
+| Try a KB file just for your local testing | `kb/<scope>/` on Cloud Shell | Restart `uvicorn`, see it on port 8080 |
+| Same file for everyone on the public site | Same folder, but committed + pushed + `./deploy.sh` | Baked into the Cloud Run image |
+| One-off upload on the live site (not durable) | KB panel at `/agent-collective-v2/` | Lives until the Cloud Run instance recycles |
+
 ## Deploying to Public Hosting
 
 ### Hosting (static + rewrites)
