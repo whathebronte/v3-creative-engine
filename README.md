@@ -223,11 +223,20 @@ source .venv/bin/activate
 uvicorn demo_ui.server:app --host 0.0.0.0 --port 8080
 ```
 
-Leave that terminal running. You should see lines like `Uvicorn running on http://0.0.0.0:8080`.
+Leave that terminal running. You should see lines like `Uvicorn running on http://0.0.0.0:8080`. This is the **backend only** (ADK + API) — no HTML is served here.
 
-**Open the UI**: in Cloud Shell, click the **Web Preview** button (top right, looks like an eye / monitor icon) → **Preview on port 8080**. A browser tab opens with the Agent Collective demo UI. Type a brief and watch the agents work.
+**Open the UI** — the production frontend lives in `public/agent-collective-v2/` and is what you'll iterate on. Serve it locally in a **second Cloud Shell tab** so the backend keeps running:
 
-**When you're done**: press `Ctrl+C` in the terminal to stop the server.
+```bash
+cd ~/v3-creative-engine/public/agent-collective-v2
+python3 -m http.server 5500
+```
+
+In Cloud Shell, click the **Web Preview** button (top right) → **Change port** → `5500` → **Preview**. The page auto-detects `localhost` and points `API_BASE` at `http://localhost:8080` (see `public/agent-collective-v2/script.js:15-18`), so the frontend you see is exactly the one shipped to production, talking to your local backend.
+
+**When you're done**: press `Ctrl+C` in each terminal to stop both servers.
+
+> Heads-up: there's a `services/agent-collective-v2/demo_ui/static/` folder with its own `index.html` + `app.js`. Ignore it — it's leftover scaffolding from the Google ADK sample project, not wired up (`server.py` sets `web=False` and has no static mount). The canonical frontend is `public/agent-collective-v2/`.
 
 **Troubleshooting**
 - *"command not found: uvicorn"* → you forgot `source .venv/bin/activate`. Run it and try again.
@@ -236,6 +245,51 @@ Leave that terminal running. You should see lines like `Uvicorn running on http:
 - *Slow first run* → normal. Pip is downloading ~200 MB of ADK dependencies the first time.
 
 **Switching to the cheap model for testing** (recommended while iterating): open `services/agent-collective-v2/agent_collective/agent.py` in the Cloud Shell Editor and change `MODEL_PRO = "gemini-2.5-pro"` to `"gemini-2.5-flash"` (~$0.15/run instead of ~$2–3/run). Change it back before deploying.
+
+### File map — what you edit for Agent Collective V2
+
+The files below are the only ones you need to touch for day-to-day iteration. Everything you edit locally is the same file that ships to the public site.
+
+**Agent logic + prompts (local = production, ships via `./deploy.sh`)**
+```
+services/agent-collective-v2/
+├── agent_collective/
+│   ├── agent.py                    ← 38-agent pipeline wiring + model constants
+│   └── prompts/
+│       ├── root_agent.md
+│       ├── adaptation/             strategy_generator.md, strategy_presenter.md
+│       ├── analysis/               audience_mapper.md, deconstructor.md, preprocessor.md, analysis_presenter.md
+│       ├── brief/                  brief_generator.md, brief_quality_checker.md, brief_reviser.md, brief_presenter.md
+│       ├── creative/               creative_director.md, creative_presenter.md
+│       ├── delivery/               variation_generator.md, variation_regenerator.md, consistency_checker.md, results_presenter.md
+│       ├── discovery/              concept_generator.md, kb_analyzer.md, concept_presenter.md
+│       ├── full_campaign/          creative_bridge.md, analysis_presenter.md, results_presenter.md
+│       └── production/             creative_prompter.md, prompt_quality_checker.md, prompt_regenerator.md, results_presenter.md
+└── demo_ui/
+    ├── server.py                   ← FastAPI routes (/api/session, /api/run/stream, /api/kb/*, /api/brief, …)
+    └── kb_storage.py               ← KB read/write logic
+```
+
+**Frontend (local = production, ships via `firebase deploy --only hosting` or CI)**
+```
+public/agent-collective-v2/
+├── index.html
+├── script.js                       ← API_BASE auto-switches local ↔ production (lines 15-18)
+└── style.css
+```
+
+**Iteration checklist**
+
+| You edited | Reload by | Ship to prod with |
+|---|---|---|
+| `agent_collective/agent.py` | `Ctrl+C` uvicorn → re-run | `cd services/agent-collective-v2 && ./deploy.sh` |
+| `agent_collective/prompts/**/*.md` | `Ctrl+C` uvicorn → re-run | `./deploy.sh` |
+| `demo_ui/server.py` / `kb_storage.py` | `Ctrl+C` uvicorn → re-run (or `uvicorn --reload`) | `./deploy.sh` |
+| `public/agent-collective-v2/*.html/.js/.css` | Just refresh the browser tab on port 5500 | `firebase deploy --only hosting` (or push to `main` — CI auto-deploys) |
+
+**Don't edit** `services/agent-collective-v2/demo_ui/static/` — unused scaffolding, see the heads-up above.
+
+
 
 ### Inspecting outputs
 
